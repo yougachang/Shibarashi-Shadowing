@@ -3,5 +3,5 @@ services:
     name: shibarashi
     runtime: node
     plan: free
-    buildCommand: ""
+    buildCommand: "echo no build"
     startCommand: node server.js
