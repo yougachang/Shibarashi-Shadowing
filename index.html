@@ -272,7 +272,6 @@
       display: flex; gap: 9px; padding: 7px 8px 7px 10px; border-radius: 8px;
       transition: background 0.12s; align-items: baseline;
     }
-    .sh-line:hover { background: var(--surface-2); }
     .sh-line.active { background: var(--accent-soft); }
     .sh-line .ts { color: var(--accent-light); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; flex-shrink: 0; min-width: 42px; cursor: pointer; padding-top: 1px; }
     .sh-line .tx { font-size: 13.5px; line-height: 1.5; color: var(--text); flex: 1; cursor: pointer; }
@@ -300,9 +299,9 @@
     .sh-line .bm-btn:hover { opacity: 1; color: var(--text); }
     .sh-line.bookmarked .bm-btn { opacity: 1; color: var(--accent); }
     .sh-line .bm-btn svg { width: 13px; height: 13px; }
-    /* a thin accent bar marks a bookmarked line */
-    .sh-line.bookmarked { box-shadow: inset 2px 0 0 var(--accent); }
-    /* the auto-saved "last read" line gets a subtle dashed underline marker */
+    /* the "last read" line is fully highlighted so it's easy to spot on return */
+    .sh-line.lastpos { background: var(--accent-soft); }
+    .sh-line.lastpos .ts { color: var(--accent); }
     .sh-line.lastpos .ts::after { content: '↩'; margin-left: 4px; color: var(--accent); font-weight: 700; }
 
     /* "continue where you left off" bar above the transcript */
@@ -690,6 +689,8 @@
     if(!ytPlayer || !ytPlayer.getCurrentTime) return;
     const t = ytPlayer.getCurrentTime();
     const playing = ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+    // remember the exact second we're at, so we can resume here next time
+    if(playing && typeof t === 'number' && t > 0) saveLastPos(t, true);
     const lines = document.querySelectorAll('#sh-transcript .sh-line');
     let activeEl = null;
     lines.forEach(el=>{
@@ -697,6 +698,9 @@
       const dur = parseFloat(el.dataset.dur) || 4;
       el.classList.remove('active');
       el.classList.remove('playing');
+      // once playback starts, drop the "resume here" highlight — the current
+      // line takes over, so we don't have two highlights at once
+      if(playing) el.classList.remove('lastpos');
       if(t >= start && t < start + dur) activeEl = el;
     });
     if(activeEl){
@@ -739,6 +743,30 @@
       await fetchAndRenderTranscript(id);
     }
     renderLibrary();
+
+    // resume from the exact second we left off last time (seek, don't autoplay)
+    resumeOnOpen();
+  }
+
+  // On opening a video, jump the player to the saved second, start playing
+  // from there, and scroll the transcript to that line.
+  function resumeOnOpen(){
+    const pos = getLastPos();
+    if(pos == null || pos < 1) return;
+    const trySeek = (tries) => {
+      if(ytPlayer && ytPlayer.seekTo && ytPlayer.getDuration && ytPlayer.getDuration() > 0){
+        ytPlayer.seekTo(pos, true);
+        ytPlayer.playVideo();
+        // scroll the matching transcript line into view + mark it
+        const lines = document.querySelectorAll('#sh-transcript .sh-line');
+        let target = null;
+        lines.forEach(el=>{ if(parseFloat(el.dataset.start) <= pos + 0.5) target = el; });
+        if(target){ target.scrollIntoView({ behavior: 'smooth', block: 'center' }); markLastPosLine(target); }
+      } else if(tries > 0){
+        setTimeout(()=>trySeek(tries-1), 250); // player not ready yet — retry
+      }
+    };
+    trySeek(20); // up to ~5s of retries while the player loads
   }
 
   // Public Invidious instances — used as a fallback when our own server is
@@ -895,14 +923,14 @@
     const e = loadLib()[currentVideo.id];
     return e && typeof e.lastPos === 'number' ? e.lastPos : null;
   }
-  function saveLastPos(sec){
+  function saveLastPos(sec, silent){
     if(!currentVideo) return;
     const lib = loadLib();
     const e = lib[currentVideo.id] || { id: currentVideo.id, url: currentVideo.url, title: currentVideo.title, addedAt: Date.now() };
     e.lastPos = sec;
     lib[currentVideo.id] = e;
     saveLib(lib);
-    refreshContinueBar();
+    if(!silent) refreshContinueBar();
   }
   function markLastPosLine(lineEl){
     document.querySelectorAll('#sh-transcript .sh-line.lastpos').forEach(el=>el.classList.remove('lastpos'));
