@@ -8,6 +8,12 @@ A clean, minimal YouTube shadowing workspace for language learners.
 
 ---
 
+## 🎬 Demo / 示範
+
+https://github.com/yougachang/Shibarashi-Shadowing/releases/download/demo-assets/shadowing.tool.mp4
+
+---
+
 ## ✨ Features / 功能
 
 - Watch any YouTube video with its transcript side-by-side / 看 YouTube 影片,逐字稿並排顯示
