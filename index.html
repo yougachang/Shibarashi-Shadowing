@@ -274,7 +274,7 @@
     .sh-line:hover { background: var(--surface-2); }
     .sh-line.active { background: var(--accent-soft); }
     .sh-line .ts { color: var(--accent-light); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; flex-shrink: 0; min-width: 42px; cursor: pointer; padding-top: 1px; }
-    .sh-line .tx { font-size: 13.5px; line-height: 1.5; color: var(--text); flex: 1; }
+    .sh-line .tx { font-size: 13.5px; line-height: 1.5; color: var(--text); flex: 1; cursor: pointer; }
     .sh-line .play-btn {
       flex-shrink: 0; align-self: flex-start; margin-top: 1px; width: 22px; height: 22px; border-radius: 6px;
       background: transparent; border: 1px solid var(--border); color: var(--muted-2); cursor: pointer;
@@ -342,6 +342,7 @@
       .sh-left, .sh-right { flex: 1 1 auto !important; overflow: visible; min-width: 0; }
       .sh-divider { display: none; }
       .sh-vdivider { display: none; }
+      .sh-notes-card { flex: 1.1 !important; }
       .sh-video-wrap { aspect-ratio: 16/9 !important; height: auto !important; }
       .sh-transcript { max-height: 360px; }
     }
@@ -353,22 +354,28 @@
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark">
-          <!-- minimal monochrome Shiba — adapts to theme via currentColor -->
-          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Shiba Inu"
-               stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">
-            <!-- ears -->
-            <path d="M10 14 C8 7 12 5 15 9 L17 14"/>
-            <path d="M30 14 C32 7 28 5 25 9 L23 14"/>
-            <!-- head -->
-            <path d="M20 9 C28 9 32 14 32 21 C32 29 26.5 34 20 34 C13.5 34 8 29 8 21 C8 14 12 9 20 9 Z"/>
-            <!-- eyes (filled dots) -->
-            <circle cx="15.4" cy="20" r="1.5" fill="currentColor" stroke="none"/>
-            <circle cx="24.6" cy="20" r="1.5" fill="currentColor" stroke="none"/>
-            <!-- nose + smile -->
-            <path d="M18.7 25 C18.7 24.2 21.3 24.2 21.3 25 C21.3 25.9 20 26.4 20 26.4 C20 26.4 18.7 25.9 18.7 25 Z" fill="currentColor" stroke="none"/>
-            <path d="M20 26.4 L20 27.8"/>
-            <path d="M20 27.8 C18.7 29 17.2 28.6 16.8 27.6"/>
-            <path d="M20 27.8 C21.3 29 22.8 28.6 23.2 27.6"/>
+          <!-- Shiba logo — adapts to theme via currentColor -->
+          <svg viewBox="0 0 769 795" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Shiba Inu" stroke="currentColor">
+            <path d="M345.085 320.223V322.132C345.085 331.26 352.485 338.661 361.614 338.661C370.742 338.661 378.143 331.26 378.143 322.132V305.086" stroke="currentColor" stroke-width="20.7926" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M383.462 114.786C460.814 114.786 530.142 153.168 579.832 209.759C629.493 266.316 660.341 341.901 660.341 418.166C660.341 572.872 534.45 668.545 383.462 668.545C232.474 668.545 106.582 572.872 106.582 418.166C106.582 341.901 137.43 266.316 187.091 209.759C236.781 153.168 306.11 114.786 383.462 114.786Z" stroke="currentColor" stroke-width="26.5"/>
+            <circle cx="311.089" cy="280.002" r="19.382" fill="currentColor"/>
+            <circle cx="462.972" cy="280.002" r="19.382" fill="currentColor"/>
+            <circle cx="384.106" cy="263.828" r="30.3675" stroke="currentColor" stroke-width="26.5"/>
+            <path d="M297.671 181.982C305.548 181.982 313.484 183.05 320.151 185.161C323.419 186.196 327.163 187.724 330.588 190.063C333.91 192.332 338.827 196.738 340.292 203.301C341.757 209.863 338.807 214.269 336.498 216.537C334.117 218.876 331.056 220.405 328.251 221.44C322.526 223.552 315.067 224.62 307.19 224.62C299.313 224.62 291.377 223.552 284.71 221.44C281.442 220.405 277.698 218.876 274.273 216.537C271.055 214.34 266.34 210.136 264.717 203.91L264.569 203.301L264.445 202.692C263.288 196.465 266.126 192.261 268.363 190.063C270.744 187.724 273.805 186.196 276.61 185.161C282.335 183.05 289.794 181.982 297.671 181.982Z" stroke="currentColor" stroke-width="26.5" stroke-linejoin="round"/>
+            <path d="M464.372 181.982C456.495 181.982 448.559 183.05 441.892 185.161C438.624 186.196 434.881 187.724 431.456 190.063C428.133 192.332 423.216 196.738 421.751 203.301C420.286 209.863 423.236 214.269 425.545 216.537C427.926 218.876 430.987 220.405 433.793 221.44C439.517 223.552 446.976 224.62 454.853 224.62C462.73 224.62 470.666 223.552 477.334 221.44C480.601 220.405 484.345 218.876 487.77 216.537C490.988 214.34 495.703 210.136 497.326 203.91L497.474 203.301L497.598 202.692C498.755 196.465 495.917 192.261 493.68 190.063C491.3 187.724 488.238 186.196 485.433 185.161C479.708 183.05 472.249 181.982 464.372 181.982Z" stroke="currentColor" stroke-width="26.5" stroke-linejoin="round"/>
+            <path d="M421.837 320.223V322.132C421.837 331.26 414.436 338.661 405.308 338.661C396.179 338.661 388.779 331.26 388.779 322.132V305.086" stroke="currentColor" stroke-width="20.7926" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M261.57 299.441C223.801 293.492 186.076 310.368 165.337 342.489L137.326 385.871" stroke="currentColor" stroke-width="26.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M513.852 305.231C551.621 299.282 589.347 316.158 610.086 348.279L638.096 391.662" stroke="currentColor" stroke-width="26.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M307.299 524.43C343.714 576.092 420.316 576.092 456.73 524.43" stroke="currentColor" stroke-width="26.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M160.682 234.927L165.373 114.29C166.076 96.1942 184.32 84.1195 201.252 90.5428L302.438 128.928" stroke="currentColor" stroke-width="26.5"/>
+            <path d="M608.698 234.927L604.007 114.29C603.304 96.1942 585.06 84.1195 568.128 90.5428L466.942 128.928" stroke="currentColor" stroke-width="26.5"/>
+            <path d="M459.611 97.4341H338.046H316.667V158.636H341.399V136H365.373V158.636H392.96V136H421.665V158.636H459.611V97.4341Z" fill="currentColor" stroke="currentColor" stroke-width="19.4186" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M62.9468 602.697L111.115 532.206C116.265 524.669 127.316 524.476 132.726 531.829L178.545 594.095C184.673 602.422 179.327 614.246 169.028 615.148L75.0416 623.372C63.8999 624.346 56.6368 611.931 62.9468 602.697Z" fill="currentColor" stroke="currentColor" stroke-width="19.4186" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M705.553 602.697L657.385 532.206C652.235 524.669 641.184 524.476 635.774 531.829L589.955 594.095C583.827 602.422 589.173 614.246 599.472 615.148L693.458 623.372C704.6 624.346 711.863 611.931 705.553 602.697Z" fill="currentColor" stroke="currentColor" stroke-width="19.4186" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M302.867 263.246L295.395 250.792" stroke="currentColor" stroke-width="19.4186" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M456.924 263.246L449.452 250.792" stroke="currentColor" stroke-width="19.4186" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M314.325 264.738L322.43 249.796" stroke="currentColor" stroke-width="19.4186" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M468.382 264.738L476.487 249.796" stroke="currentColor" stroke-width="19.4186" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
         <div class="brand-name">Shibarashi<span class="sub">Shadowing</span></div>
@@ -475,6 +482,9 @@
               <textarea id="sh-notes" placeholder="Take notes here — new phrases, pronunciation, design vocabulary… Autosaved per video."></textarea>
             </div>
 
+            <!-- horizontal drag handle: pull to resize notes / library -->
+            <div class="sh-vdivider" id="sh-vdivider2" title="Drag to resize notes / library"></div>
+
             <div class="sh-library-card">
               <div class="sh-tc-head">
                 <span class="sh-tc-title">Library</span>
@@ -531,38 +541,44 @@
   let rawSegments = [];      // last loaded fine-grained segments
   let grouped = true;        // grouping mode (default on)
 
-  // Merge fine-grained caption fragments into readable chunks.
-  // Break when: a sentence ends (. ? !), a long pause occurs (likely a
-  // new thought / speaker change), or the chunk gets too long.
-  const PAUSE_GAP = 1.5;     // seconds of silence that forces a break
-  const MAX_CHARS = 160;     // don't let a run-on sentence grow unbounded
+  // Merge fine-grained caption fragments into short, shadowing-friendly
+  // chunks. Auto-captions often have NO punctuation, so we can't rely on
+  // sentence endings alone — we also break on pauses and clause boundaries
+  // once a chunk reaches a comfortable length, and hard-cap the length so
+  // nothing grows into an unreadable run-on.
+  const HARD_MAX = 110;   // absolute max chars before forcing a break
+  const SOFT_MIN = 45;    // once past this, a small pause / comma ends the chunk
+  const SOFT_GAP = 0.6;   // a "small pause" between fragments (seconds)
+  const HARD_GAP = 1.2;   // a longer pause always breaks (new thought / speaker)
   function groupSegments(segs){
     const out = [];
     let cur = null;
+    const flush = () => { if(cur){ cur.text = cur.text.replace(/\s+/g,' ').trim(); out.push(cur); cur = null; } };
     for(let i=0;i<segs.length;i++){
       const s = segs[i];
       if(!cur){
         cur = { start: s.start, dur: s.dur, text: s.text };
       } else {
-        const prevEnd = cur.start + cur.dur;
-        const gap = s.start - prevEnd;
         cur.text += ' ' + s.text;
         cur.dur = (s.start + s.dur) - cur.start;
-        // remember if this fragment opened with a gap (handled below via break check on prev)
-        void gap;
       }
-      // decide whether to close the current chunk after adding this fragment
       const next = segs[i+1];
-      const endsSentence = /[.!?]["')\]]?$/.test(cur.text.trim());
+      const txt = cur.text.trim();
+      const len = txt.length;
+      const endsSentence = /[.!?]["')\]]?$/.test(txt);
+      const endsClause = /[,;:]$/.test(txt);
       const gapToNext = next ? (next.start - (s.start + s.dur)) : Infinity;
-      const tooLong = cur.text.length >= MAX_CHARS;
-      if(endsSentence || gapToNext >= PAUSE_GAP || tooLong || !next){
-        cur.text = cur.text.replace(/\s+/g,' ').trim();
-        out.push(cur);
-        cur = null;
-      }
+
+      let brk = false;
+      if(!next) brk = true;                                  // last fragment
+      else if(endsSentence) brk = true;                      // sentence end
+      else if(gapToNext >= HARD_GAP) brk = true;             // long pause
+      else if(len >= HARD_MAX) brk = true;                   // too long
+      else if(len >= SOFT_MIN && gapToNext >= SOFT_GAP) brk = true; // long enough + small pause
+      else if(len >= SOFT_MIN && endsClause) brk = true;     // long enough + clause boundary
+      if(brk) flush();
     }
-    if(cur){ cur.text = cur.text.replace(/\s+/g,' ').trim(); out.push(cur); }
+    flush();
     return out;
   }
 
@@ -796,9 +812,11 @@
         `<button class="play-btn" title="Play / pause from here">${ICO_PLAY}${ICO_PAUSE}</button>` +
         `<span class="ts">${fmtTime(s.start)}</span>` +
         `<span class="tx">${escapeHtml(s.text)}</span>`;
-      // timestamp click → seek (no toggle)
-      line.querySelector('.ts').onclick = ()=> seekTo(s.start);
-      // play button → toggle play/pause from this line
+      // timestamp click → jump to this line and play (no toggle)
+      line.querySelector('.ts').onclick = (e)=>{ e.stopPropagation(); seekTo(s.start); };
+      // clicking the sentence text → toggle play / pause from this line
+      line.querySelector('.tx').onclick = ()=> togglePlayLine(line, s.start);
+      // play button → same toggle
       line.querySelector('.play-btn').onclick = (e)=>{ e.stopPropagation(); togglePlayLine(line, s.start); };
       tEl.appendChild(line);
     });
@@ -1005,6 +1023,44 @@
       const vTop = video.getBoundingClientRect().top;
       const leftH = left.getBoundingClientRect().height;
       geom = { top: vTop, maxH: Math.max(120, leftH - 180) };
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', e=>{
+      if(!dragging) return;
+      pendingY = e.clientY;
+      if(!rafId) rafId = requestAnimationFrame(apply);
+    });
+    window.addEventListener('mouseup', ()=>{
+      if(!dragging) return;
+      dragging = false; vdiv.classList.remove('dragging');
+      document.body.classList.remove('sh-vresizing');
+      setDragShield(false);
+      if(rafId){ cancelAnimationFrame(rafId); rafId = 0; }
+    });
+  })();
+
+  // Vertical divider: drag to resize notes (top) vs library (bottom).
+  (function initVDivider2(){
+    const vdiv = document.getElementById('sh-vdivider2');
+    const notes = document.querySelector('.sh-notes-card');
+    const right = document.querySelector('.sh-right');
+    if(!vdiv || !notes || !right) return;
+    let dragging = false, rafId = 0, geom = null, pendingY = 0;
+
+    const apply = () => {
+      rafId = 0;
+      let h = pendingY - geom.top;
+      h = Math.max(100, Math.min(h, geom.maxH));
+      notes.style.flex = `0 0 ${h}px`;
+    };
+
+    vdiv.addEventListener('mousedown', e=>{
+      dragging = true; vdiv.classList.add('dragging');
+      document.body.classList.add('sh-vresizing');
+      setDragShield(true);
+      const nTop = notes.getBoundingClientRect().top;
+      const rightH = right.getBoundingClientRect().height;
+      geom = { top: nTop, maxH: Math.max(100, rightH - 140) };
       e.preventDefault();
     });
     window.addEventListener('mousemove', e=>{
