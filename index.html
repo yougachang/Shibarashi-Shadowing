@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shibarashi Goal Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ===== Shibarashi — minimal monochrome, Apple-style =====
+       Light is the default; dark applies via prefers-color-scheme
+       OR an explicit [data-theme="dark"] set by the toggle. */
+    :root {
+      --bg: #f5f5f7;          /* Apple light gray */
+      --sidebar: #fbfbfd;
+      --surface: #ffffff;
+      --surface-2: #ececee;
+      --border: #e3e3e6;
+      --border-light: #d2d2d6;
+      --text: #1d1d1f;        /* Apple near-black */
+      --muted: #a1a1a6;
+      --muted-2: #6e6e73;
+      --accent: #1d1d1f;      /* monochrome accent */
+      --accent-light: #424245;
+      --accent-soft: #ececee; /* neutral soft fill */
+      --success: #1d1d1f;
+      /* goal colors — three shades of gray */
+      --c-english: #1d1d1f;   /* darkest */
+      --c-portfolio: #86868b; /* mid */
+      --c-craft: #c7c7cc;     /* lightest */
+      --on-accent: #ffffff;   /* text/icon on accent fills */
+      /* heatmap: light → dark gray */
+      --hm0: #e8e8ea; --hm1: #c7c7cc; --hm2: #98989d; --hm3: #5b5b60; --hm4: #1d1d1f;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #000000;
+        --sidebar: #0a0a0a;
+        --surface: #1c1c1e;
+        --surface-2: #2c2c2e;
+        --border: #2c2c2e;
+        --border-light: #3a3a3c;
+        --text: #f5f5f7;
+        --muted: #636366;
+        --muted-2: #aeaeb2;
+        --accent: #f5f5f7;
+        --accent-light: #d1d1d6;
+        --accent-soft: #2c2c2e;
+        --success: #f5f5f7;
+        --c-english: #f5f5f7;
+        --c-portfolio: #8e8e93;
+        --c-craft: #48484a;
+        --on-accent: #1d1d1f;
+        --hm0: #1c1c1e; --hm1: #3a3a3c; --hm2: #636366; --hm3: #aeaeb2; --hm4: #f5f5f7;
+      }
+    }
+    /* explicit dark override from the toggle */
+    :root[data-theme="dark"] {
+      --bg: #000000;
+      --sidebar: #0a0a0a;
+      --surface: #1c1c1e;
+      --surface-2: #2c2c2e;
+      --border: #2c2c2e;
+      --border-light: #3a3a3c;
+      --text: #f5f5f7;
+      --muted: #636366;
+      --muted-2: #aeaeb2;
+      --accent: #f5f5f7;
+      --accent-light: #d1d1d6;
+      --accent-soft: #2c2c2e;
+      --success: #f5f5f7;
+      --c-english: #f5f5f7;
+      --c-portfolio: #8e8e93;
+      --c-craft: #48484a;
+      --on-accent: #1d1d1f;
+      --hm0: #1c1c1e; --hm1: #3a3a3c; --hm2: #636366; --hm3: #aeaeb2; --hm4: #f5f5f7;
+    }
+
+    html, body { height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+      font-size: 14px;
+      overflow: hidden;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 232px 1fr;
+      height: 100vh;
+    }
+    /* calendar page keeps the original main + right split */
+    #page-calendar { display: grid; grid-template-columns: 1fr 320px; min-width: 0; overflow: hidden; }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      padding: 22px 16px;
+      display: flex; flex-direction: column;
+      overflow-y: auto;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 26px; padding: 0 6px; }
+    .brand-mark {
+      width: 32px; height: 32px; flex-shrink: 0; color: var(--text);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .brand-mark svg { width: 32px; height: 32px; display: block; }
+    .brand-name { font-weight: 800; font-size: 15px; line-height: 1.15; letter-spacing: -0.01em; }
+    .brand-name .sub { display: block; font-weight: 600; font-size: 10px; color: var(--muted); letter-spacing: 0.04em; }
+
+    .nav-group { margin-bottom: 22px; }
+    .nav-group-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--muted); padding: 0 8px; margin-bottom: 8px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px; border-radius: 8px; color: var(--muted-2);
+      font-weight: 500; cursor: pointer; transition: background 0.15s, color 0.15s;
+      user-select: none;
+    }
+    .nav-item:hover { background: var(--surface-2); color: var(--text); }
+    .nav-item.active { background: var(--surface-2); color: var(--text); }
+    .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+    .nav-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin: 0 4px; }
+
+    .sidebar-streak {
+      margin-top: auto; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 12px; padding: 14px;
+    }
+    .sidebar-streak .big { font-size: 28px; font-weight: 800; color: var(--text); line-height: 1; }
+    .sidebar-streak .big .fire { font-size: 22px; }
+    .sidebar-streak .lbl { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+    /* theme toggle (segmented, Apple-style) */
+    .theme-toggle {
+      display: flex; gap: 2px; margin-top: 12px; padding: 3px;
+      background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px;
+    }
+    .theme-toggle button {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      background: none; border: none; color: var(--muted-2); cursor: pointer;
+      padding: 6px; border-radius: 6px; transition: background 0.15s, color 0.15s;
+    }
+    .theme-toggle button svg { width: 16px; height: 16px; }
+    .theme-toggle button:hover { color: var(--text); }
+    .theme-toggle button.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+
+    /* ===== CENTER / CALENDAR ===== */
+    .main {
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .main-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 26px; border-bottom: 1px solid var(--border);
+    }
+    .main-title { font-size: 19px; font-weight: 700; }
+    .main-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .week-nav { display: flex; align-items: center; gap: 6px; }
+    .week-nav button {
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--muted-2); width: 32px; height: 32px; border-radius: 8px;
+      cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .week-nav button:hover { background: var(--surface-2); color: var(--text); }
+    .week-nav .today-btn { width: auto; padding: 0 14px; font-size: 13px; font-weight: 600; }
+
+    /* View toggle */
+    .view-toggle { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 3px; }
+    .view-toggle button {
+      background: none; border: none; color: var(--muted-2);
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      padding: 5px 14px; border-radius: 6px; cursor: pointer; transition: background 0.15s, color 0.15s;
+    }
+    .view-toggle button.active { background: var(--accent); color: var(--on-accent); }
+
+    /* Calendar grid */
+    .calendar { flex: 1; overflow-y: auto; padding: 18px 26px 40px; }
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px;
+    }
+    .cal-col {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 10px; min-height: 240px;
+      display: flex; flex-direction: column;
+    }
+    .cal-col.is-today { border-color: var(--accent); background: var(--accent-soft); }
+    .cal-col.is-future { opacity: 0.55; }
+    .cal-day-head { text-align: center; margin-bottom: 12px; }
+    .cal-dow { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .cal-date {
+      font-size: 19px; font-weight: 700; margin-top: 3px;
+      width: 34px; height: 34px; line-height: 34px; border-radius: 50%;
+      margin: 3px auto 0; display: inline-block;
+    }
+    .cal-col.is-today .cal-date { background: var(--accent); color: var(--on-accent); }
+
+    .cal-blocks { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .cal-block {
+      border-radius: 8px; padding: 8px 9px; font-size: 11px; font-weight: 600;
+      cursor: pointer; transition: transform 0.1s, opacity 0.15s;
+      display: flex; align-items: center; gap: 6px;
+      border: 1px solid transparent; user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cal-block:active { transform: scale(0.97); }
+    .cal-block .cb-check {
+      width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0;
+      border: 1.5px solid currentColor; display: flex; align-items: center; justify-content: center;
+    }
+    .cal-block .cb-check svg { display: none; width: 9px; height: 9px; }
+    .cal-block.done .cb-check svg { display: block; }
+    .cal-block .cb-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* empty (undone) = outline; done = filled. Monochrome: text color
+       is the goal's gray, done state fills with that gray. */
+    .cal-block { color: var(--text); background: var(--surface-2); border-color: var(--border); }
+    .cal-block.english { color: var(--text); }
+    .cal-block.portfolio { color: var(--muted-2); }
+    .cal-block.craft { color: var(--muted-2); }
+    .cal-block.english.done { background: var(--c-english); color: var(--on-accent); border-color: transparent; }
+    .cal-block.portfolio.done { background: var(--c-portfolio); color: var(--on-accent); border-color: transparent; }
+    .cal-block.craft.done { background: var(--c-craft); color: var(--text); border-color: transparent; }
+    .cal-block.done .cb-check { border-color: currentColor; }
+    .cal-day-progress {
+      margin-top: 8px; height: 3px; border-radius: 3px; background: var(--border); overflow: hidden;
+    }
+    .cal-day-progress > div { height: 100%; background: var(--success); border-radius: 3px; transition: width 0.3s; }
+
+    /* Drag states */
+    .cal-block[draggable="true"] { cursor: grab; }
+    .cal-block.dragging { opacity: 0.4; }
+    .cal-col.drop-target { border-color: var(--accent-light); background: var(--accent-soft); }
+
+    /* ===== MONTH VIEW ===== */
+    .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    .month-dow-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 8px; }
+    .month-dow { text-align: center; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .month-cell {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      min-height: 92px; padding: 8px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .month-cell.is-today { border-color: var(--accent); background: var(--accent-soft); }
+    .month-cell.is-future { opacity: 0.5; }
+    .month-cell.other-month { opacity: 0.3; }
+    .month-cell.drop-target { border-color: var(--accent-light); background: var(--accent-soft); }
+    .month-date { font-size: 13px; font-weight: 700; color: var(--muted-2); }
+    .month-cell.is-today .month-date { color: var(--accent-light); }
+    .month-dots { display: flex; gap: 5px; margin-top: auto; }
+    .month-dot {
+      width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid; cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .month-dot:active { transform: scale(0.9); }
+    .month-dot.english { border-color: var(--c-english); }
+    .month-dot.english.done { background: var(--c-english); }
+    .month-dot.portfolio { border-color: var(--c-portfolio); }
+    .month-dot.portfolio.done { background: var(--c-portfolio); }
+    .month-dot.craft { border-color: var(--c-craft); }
+    .month-dot.craft.done { background: var(--c-craft); }
+
+    /* ===== RIGHT PANEL ===== */
+    .right {
+      background: var(--sidebar);
+      border-left: 1px solid var(--border);
+      padding: 22px 18px; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 22px;
+    }
+    .panel-title { font-size: 13px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+    .panel-title .small { font-size: 11px; font-weight: 600; color: var(--muted); }
+
+    /* North star */
+    .northstar {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 13px; padding: 16px;
+    }
+    .northstar .label { font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted-2); margin-bottom: 8px; }
+    .northstar .goal-text { font-size: 13px; line-height: 1.5; color: var(--text); }
+    .northstar .countdown { font-size: 11px; color: var(--muted-2); margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--border); }
+    .northstar .countdown b { color: var(--accent-light); }
+
+    /* Today checklist */
+    .today-list { display: flex; flex-direction: column; gap: 8px; }
+    .today-item {
+      display: flex; align-items: center; gap: 11px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 13px; cursor: pointer;
+      transition: background 0.15s, border-color 0.15s; user-select: none;
+    }
+    .today-item:hover { background: var(--surface-2); }
+    .today-item.done { background: var(--surface); border-color: var(--border); }
+    .ti-check {
+      width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--border-light);
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .ti-check svg { display: none; }
+    .today-item.done .ti-check svg { display: block; }
+    .today-item .ti-name { font-size: 13px; font-weight: 600; flex: 1; }
+    .today-item.done .ti-name { color: var(--muted); text-decoration: line-through; }
+    .ti-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .today-item.eng .ti-check.on { background: var(--c-english); border-color: var(--c-english); }
+    .today-item.por .ti-check.on { background: var(--c-portfolio); border-color: var(--c-portfolio); }
+    .today-item.cra .ti-check.on { background: var(--c-craft); border-color: var(--c-craft); }
+
+    /* Stats row */
+    .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .stat-mini {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 13px;
+    }
+    .stat-mini .v { font-size: 20px; font-weight: 800; line-height: 1; }
+    .stat-mini .v .u { font-size: 11px; font-weight: 600; color: var(--muted-2); }
+    .stat-mini .l { font-size: 11px; color: var(--muted); margin-top: 5px; }
+    .stat-mini .fire-c { color: var(--c-craft); }
+    .stat-mini .acc-c { color: var(--accent-light); }
+    .stat-mini .grn-c { color: var(--success); }
+
+    /* Mini heatmap */
+    .heat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
+    .heatmap { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7,1fr); gap: 3px; }
+    .hm-cell { width: 11px; height: 11px; border-radius: 3px; background: var(--hm0); }
+    .hm-cell.l1 { background: var(--hm1); } .hm-cell.l2 { background: var(--hm2); }
+    .hm-cell.l3 { background: var(--hm3); } .hm-cell.l4 { background: var(--hm4); }
+    .hm-cell.future { background: transparent; }
+    .hm-cell.today-cell { box-shadow: 0 0 0 1.5px var(--accent-light); }
+    .heat-legend { display: flex; align-items: center; gap: 4px; justify-content: flex-end; margin-top: 11px; font-size: 10px; color: var(--muted); }
+    .legend-cell { width: 10px; height: 10px; border-radius: 3px; }
+
+    #tooltip {
+      position: fixed; background: var(--text); color: var(--bg); border: 1px solid var(--text);
+      border-radius: 8px; padding: 7px 10px; font-size: 11px;
+      pointer-events: none; opacity: 0; transition: opacity 0.12s; z-index: 100; white-space: nowrap;
+    }
+    #tooltip .tt-d { color: var(--bg); opacity: 0.6; margin-bottom: 2px; }
+    #tooltip .tt-c { font-weight: 700; }
+
+    /* selection popup */
+    #sel-popup {
+      position: fixed; z-index: 200; background: var(--surface); border: 1px solid var(--border-light);
+      border-radius: 11px; padding: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      display: none; max-width: 320px;
+    }
+    #sel-popup.visible { display: block; }
+    .sel-actions { display: flex; gap: 4px; }
+    .sel-actions button {
+      background: transparent; border: none; color: var(--text); font-family: inherit; font-size: 13px;
+      font-weight: 600; padding: 8px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap; transition: background 0.12s;
+    }
+    .sel-actions button:hover { background: var(--surface-2); }
+    .sel-result { padding: 9px 10px 6px; border-top: 1px solid var(--border); margin-top: 4px; }
+    .sel-trans { font-size: 15px; line-height: 1.45; color: var(--text); margin-bottom: 9px; }
+    .sel-trans.loading { color: var(--muted); font-size: 13px; }
+    .sel-save {
+      background: var(--accent); border: none; color: var(--on-accent); font-family: inherit; font-size: 12px;
+      font-weight: 600; padding: 6px 12px; border-radius: 7px; cursor: pointer; transition: background 0.12s;
+    }
+    .sel-save:hover { background: var(--accent-light); }
+
+    /* ===== SHADOWING PAGE ===== */
+    .shadowing-page { overflow: hidden; }
+    .sh-main { display: flex; flex-direction: column; overflow: hidden; height: 100vh; }
+    .sh-done-btn {
+      background: var(--surface-2); border: 1px solid var(--border);
+      color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600;
+      padding: 8px 14px; border-radius: 9px; cursor: pointer; transition: background 0.15s; white-space: nowrap;
+    }
+    .sh-done-btn:hover { background: var(--border); }
+    .sh-done-btn.is-done { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+    .sh-body { flex: 1; display: flex; gap: 0; padding: 18px 26px 26px; overflow: hidden; min-height: 0; }
+    .sh-left { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow: hidden; flex: 0 0 62%; }
+    .sh-right { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow: hidden; flex: 1 1 0; min-width: 220px; }
+    .sh-divider {
+      flex: 0 0 18px; cursor: col-resize; display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .sh-divider::before {
+      content: ''; width: 4px; height: 46px; border-radius: 4px; background: var(--border);
+      transition: background 0.15s;
+    }
+    .sh-divider:hover::before, .sh-divider.dragging::before { background: var(--accent); }
+    body.sh-resizing { cursor: col-resize; user-select: none; }
+
+    .sh-urlbar { display: flex; gap: 8px; }
+    .sh-urlbar input {
+      flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 9px;
+      color: var(--text); font-family: inherit; font-size: 13px; padding: 10px 13px; outline: none;
+    }
+    .sh-urlbar input:focus { border-color: var(--accent); }
+    .sh-urlbar button, .sh-manual button, .sh-library-card button {
+      background: var(--accent); border: none; color: var(--on-accent); font-family: inherit; font-size: 13px;
+      font-weight: 600; padding: 10px 18px; border-radius: 9px; cursor: pointer; transition: background 0.15s;
+    }
+    .sh-urlbar button:hover { background: var(--accent-light); }
+
+    .sh-video-wrap { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; flex-shrink: 0; }
+    /* once resized, JS sets an explicit height and drops the aspect-ratio */
+    .sh-video-wrap.resized { aspect-ratio: auto; }
+
+    /* horizontal divider between video and transcript */
+    .sh-vdivider {
+      flex: 0 0 12px; cursor: row-resize; display: flex; align-items: center; justify-content: center;
+    }
+    .sh-vdivider::before {
+      content: ''; height: 4px; width: 46px; border-radius: 4px; background: var(--border);
+      transition: background 0.15s;
+    }
+    .sh-vdivider:hover::before, .sh-vdivider.dragging::before { background: var(--accent); }
+    body.sh-vresizing { cursor: row-resize; user-select: none; }
+    .sh-video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    .sh-video-empty {
+      position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 10px; color: var(--muted); font-size: 13px; text-align: center; padding: 20px;
+    }
+    .sh-video-empty .emoji { font-size: 34px; }
+
+    .sh-transcript-card, .sh-notes-card, .sh-library-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      display: flex; flex-direction: column; min-height: 0; overflow: hidden;
+    }
+    .sh-transcript-card { flex: 1; }
+    .sh-notes-card { flex: 1.1; }
+    .sh-library-card { flex: 1; }
+    .sh-tc-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 12px 15px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .sh-tc-title { font-size: 13px; font-weight: 700; }
+    .sh-tc-status { font-size: 11px; color: var(--muted); }
+    .sh-tc-head input {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 7px; color: var(--text);
+      font-family: inherit; font-size: 12px; padding: 5px 10px; outline: none; width: 140px;
+    }
+    .sh-tc-head input:focus { border-color: var(--accent); }
+
+    .sh-seg-toggle { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 2px; }
+    .sh-seg-toggle button {
+      background: none; border: none; color: var(--muted-2); font-family: inherit;
+      font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 5px; cursor: pointer; transition: background 0.15s, color 0.15s;
+    }
+    .sh-seg-toggle button.active { background: var(--accent); color: var(--on-accent); }
+
+    .sh-export-btn {
+      background: var(--bg); border: 1px solid var(--border); color: var(--muted-2);
+      font-family: inherit; font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 6px;
+      cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .sh-export-btn:hover { background: var(--surface-2); color: var(--text); border-color: var(--border-light); }
+    .sh-export-wrap { position: relative; }
+    .sh-export-menu {
+      position: absolute; right: 0; top: calc(100% + 5px); z-index: 50;
+      background: var(--surface); border: 1px solid var(--border-light); border-radius: 9px;
+      padding: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.16); display: none; min-width: 150px;
+    }
+    .sh-export-menu.open { display: block; }
+    .sh-export-menu button {
+      display: block; width: 100%; text-align: left; background: none; border: none;
+      color: var(--text); font-family: inherit; font-size: 12.5px; font-weight: 500;
+      padding: 8px 11px; border-radius: 6px; cursor: pointer; transition: background 0.12s;
+    }
+    .sh-export-menu button:hover { background: var(--surface-2); }
+
+    .sh-transcript { overflow-y: auto; padding: 6px; flex: 1; }
+    .sh-tc-hint { color: var(--muted); font-size: 13px; padding: 20px; text-align: center; line-height: 1.5; }
+    .sh-line {
+      display: flex; gap: 9px; padding: 7px 8px 7px 10px; border-radius: 8px;
+      transition: background 0.12s; align-items: baseline;
+    }
+    .sh-line:hover { background: var(--surface-2); }
+    .sh-line.active { background: var(--accent-soft); }
+    .sh-line .ts { color: var(--accent-light); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; flex-shrink: 0; min-width: 42px; cursor: pointer; padding-top: 1px; }
+    .sh-line .tx { font-size: 13.5px; line-height: 1.5; color: var(--text); flex: 1; }
+    .sh-line .play-btn {
+      flex-shrink: 0; align-self: flex-start; margin-top: 1px; width: 22px; height: 22px; border-radius: 6px;
+      background: transparent; border: 1px solid var(--border); color: var(--muted-2); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.12s, background 0.12s, color 0.12s;
+    }
+    .sh-line:hover .play-btn { opacity: 1; }
+    .sh-line.playing .play-btn { opacity: 1; background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+    .sh-line .play-btn:hover { background: var(--surface); color: var(--text); }
+    .sh-line.playing .play-btn:hover { background: var(--accent-light); color: var(--on-accent); }
+    .sh-line .play-btn svg { width: 11px; height: 11px; }
+    .sh-line .play-btn .ico-pause { display: none; }
+    .sh-line.playing .play-btn .ico-play { display: none; }
+    .sh-line.playing .play-btn .ico-pause { display: block; }
+
+    .sh-manual { padding: 12px 15px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 9px; }
+    .sh-manual textarea {
+      width: 100%; min-height: 90px; resize: vertical; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-family: inherit; font-size: 13px; padding: 10px; outline: none;
+    }
+    .sh-manual button { align-self: flex-start; }
+
+    #sh-notes {
+      flex: 1; width: 100%; resize: none; background: transparent; border: none; outline: none;
+      color: var(--text); font-family: inherit; font-size: 14px; line-height: 1.6; padding: 14px 15px;
+    }
+    #sh-notes::placeholder { color: var(--muted); }
+
+    .sh-library { overflow-y: auto; padding: 8px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .sh-lib-card {
+      display: flex; gap: 11px; padding: 9px; border-radius: 10px; cursor: pointer;
+      border: 1px solid transparent; transition: background 0.15s, border-color 0.15s;
+    }
+    .sh-lib-card:hover { background: var(--surface-2); border-color: var(--border); }
+    .sh-lib-card.active { border-color: var(--accent); background: var(--accent-soft); }
+    .sh-lib-thumb { width: 72px; height: 41px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: var(--surface-2); }
+    .sh-lib-info { min-width: 0; flex: 1; }
+    .sh-lib-title { font-size: 12.5px; font-weight: 600; line-height: 1.3; margin-bottom: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .sh-lib-meta { font-size: 11px; color: var(--muted); }
+    .sh-lib-empty { color: var(--muted); font-size: 12.5px; text-align: center; padding: 20px; }
+    .sh-lib-del {
+      opacity: 0; align-self: center; background: none; border: none; color: var(--muted); cursor: pointer;
+      font-size: 16px; padding: 4px 6px; transition: opacity 0.15s, color 0.15s; flex-shrink: 0;
+    }
+    .sh-lib-card:hover .sh-lib-del { opacity: 1; }
+    .sh-lib-del:hover { color: #f87171; }
+
+    /* Responsive: collapse to stack on narrow screens */
+    @media (max-width: 900px) {
+      body { overflow: auto; }
+      .app { grid-template-columns: 1fr; height: auto; }
+      .sidebar { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px; border-right: none; border-bottom: 1px solid var(--border); padding: 14px 16px; }
+      .sidebar-streak { margin-top: 0; margin-left: auto; padding: 8px 12px; }
+      .sidebar-streak .big { font-size: 18px; }
+      .nav-group { margin-bottom: 0; }
+      .nav-group-label { display: none; }
+      .nav-group { display: flex; gap: 6px; }
+      .main { overflow: visible; }
+      .calendar { overflow: visible; }
+      .cal-grid { grid-template-columns: 1fr; }
+      .cal-col { min-height: auto; }
+      .right { border-left: none; border-top: 1px solid var(--border); }
+      #page-calendar { grid-template-columns: 1fr; overflow: visible; }
+      .shadowing-page { overflow: visible; }
+      .sh-main { height: auto; overflow: visible; }
+      .sh-body { flex-direction: column; overflow: visible; }
+      .sh-left, .sh-right { flex: 1 1 auto !important; overflow: visible; min-width: 0; }
+      .sh-divider { display: none; }
+      .sh-vdivider { display: none; }
+      .sh-video-wrap { aspect-ratio: 16/9 !important; height: auto !important; }
+      .sh-transcript { max-height: 360px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">
+          <!-- minimal monochrome Shiba — adapts to theme via currentColor -->
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Shiba Inu"
+               stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">
+            <!-- ears -->
+            <path d="M10 14 C8 7 12 5 15 9 L17 14"/>
+            <path d="M30 14 C32 7 28 5 25 9 L23 14"/>
+            <!-- head -->
+            <path d="M20 9 C28 9 32 14 32 21 C32 29 26.5 34 20 34 C13.5 34 8 29 8 21 C8 14 12 9 20 9 Z"/>
+            <!-- eyes (filled dots) -->
+            <circle cx="15.4" cy="20" r="1.5" fill="currentColor" stroke="none"/>
+            <circle cx="24.6" cy="20" r="1.5" fill="currentColor" stroke="none"/>
+            <!-- nose + smile -->
+            <path d="M18.7 25 C18.7 24.2 21.3 24.2 21.3 25 C21.3 25.9 20 26.4 20 26.4 C20 26.4 18.7 25.9 18.7 25 Z" fill="currentColor" stroke="none"/>
+            <path d="M20 26.4 L20 27.8"/>
+            <path d="M20 27.8 C18.7 29 17.2 28.6 16.8 27.6"/>
+            <path d="M20 27.8 C21.3 29 22.8 28.6 23.2 27.6"/>
+          </svg>
+        </div>
+        <div class="brand-name">Shibarashi<span class="sub">Goal Tracker</span></div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-label">Workspace</div>
+        <div class="nav-item active" id="nav-calendar" onclick="goPage('calendar')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          Calendar
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-label">Goals</div>
+        <div class="nav-item" id="nav-shadowing" onclick="goPage('shadowing')"><span class="nav-dot" style="background:var(--c-english)"></span> English / Shadowing</div>
+        <div class="nav-item"><span class="nav-dot" style="background:var(--c-portfolio)"></span> Portfolio</div>
+        <div class="nav-item"><span class="nav-dot" style="background:var(--c-craft)"></span> Build / Craft</div>
+      </div>
+
+      <div class="sidebar-streak">
+        <div class="big"><span class="fire">🔥</span> <span id="side-streak">0</span></div>
+        <div class="lbl">day streak — keep it alive</div>
+      </div>
+
+      <div class="theme-toggle" id="theme-toggle">
+        <button data-mode="light" onclick="setTheme('light')" title="Light">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></svg>
+        </button>
+        <button data-mode="system" onclick="setTheme('system')" title="System">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </button>
+        <button data-mode="dark" onclick="setTheme('dark')" title="Dark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ============ CALENDAR PAGE ============ -->
+    <div class="page-content" id="page-calendar">
+    <!-- MAIN / CALENDAR -->
+    <main class="main">
+      <div class="main-header">
+        <div>
+          <div class="main-title" id="cal-title">This Week</div>
+          <div class="main-sub" id="cal-range"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div class="view-toggle">
+            <button id="vt-week" class="active" onclick="setView('week')">Week</button>
+            <button id="vt-month" onclick="setView('month')">Month</button>
+          </div>
+          <div class="week-nav">
+            <button onclick="changePeriod(-1)" title="Previous">‹</button>
+            <button class="today-btn" onclick="goToday()">Today</button>
+            <button onclick="changePeriod(1)" title="Next">›</button>
+          </div>
+        </div>
+      </div>
+      <div class="calendar">
+        <div class="cal-grid" id="cal-grid"></div>
+        <div id="month-view" style="display:none">
+          <div class="month-dow-row" id="month-dow-row"></div>
+          <div class="month-grid" id="month-grid"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT PANEL -->
+    <aside class="right">
+      <div class="northstar">
+        <div class="label">★ 6-Month North Star</div>
+        <div class="goal-text">Improve English communication for design — daily shadowing, a refreshed portfolio, and building real craft.</div>
+        <div class="countdown" id="countdown"></div>
+      </div>
+
+      <div>
+        <div class="panel-title">Today <span class="small" id="today-progress">0 / 3</span></div>
+        <div class="today-list" id="today-list"></div>
+      </div>
+
+      <div>
+        <div class="panel-title">Stats</div>
+        <div class="stats-row">
+          <div class="stat-mini"><div class="v fire-c" id="stat-streak">0<span class="u"> d</span></div><div class="l">Current streak</div></div>
+          <div class="stat-mini"><div class="v acc-c" id="stat-best">0<span class="u"> d</span></div><div class="l">Best streak</div></div>
+          <div class="stat-mini"><div class="v grn-c" id="stat-perfect">0</div><div class="l">Perfect days</div></div>
+          <div class="stat-mini"><div class="v" id="stat-rate">0<span class="u">%</span></div><div class="l">Completion</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel-title">Activity <span class="small" id="heat-total">0 check-ins</span></div>
+        <div class="heat-card">
+          <div class="heatmap" id="heatmap"></div>
+          <div class="heat-legend">
+            <span>Less</span>
+            <span class="legend-cell" style="background:var(--hm0)"></span>
+            <span class="legend-cell" style="background:var(--hm1)"></span>
+            <span class="legend-cell" style="background:var(--hm2)"></span>
+            <span class="legend-cell" style="background:var(--hm3)"></span>
+            <span class="legend-cell" style="background:var(--hm4)"></span>
+            <span>More</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+    </div><!-- /page-calendar -->
+
+    <!-- ============ SHADOWING PAGE ============ -->
+    <div class="page-content shadowing-page" id="page-shadowing" style="display:none">
+      <main class="sh-main">
+        <div class="main-header">
+          <div>
+            <div class="main-title">English · Shadowing</div>
+            <div class="main-sub">Paste a YouTube URL → watch, read the transcript, take notes.</div>
+          </div>
+          <button class="sh-done-btn" id="sh-done-btn" onclick="markShadowingDone()">✓ Mark today's shadowing done</button>
+        </div>
+
+        <div class="sh-body">
+          <!-- LEFT: video + transcript -->
+          <div class="sh-left">
+            <div class="sh-urlbar">
+              <input type="text" id="sh-url" placeholder="Paste a YouTube URL (youtube.com/watch?v=… or youtu.be/…)" />
+              <button onclick="loadVideoFromInput()">Load</button>
+            </div>
+
+            <div class="sh-video-wrap" id="sh-video-wrap">
+              <div class="sh-video-empty" id="sh-video-empty">
+                <div class="emoji">🎧</div>
+                <div>Paste a YouTube URL above to start a shadowing session.</div>
+              </div>
+              <div id="sh-player"></div>
+            </div>
+
+            <!-- horizontal drag handle: pull up = taller transcript -->
+            <div class="sh-vdivider" id="sh-vdivider" title="Drag to resize video / transcript"></div>
+
+            <div class="sh-transcript-card">
+              <div class="sh-tc-head">
+                <span class="sh-tc-title">Transcript</span>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div class="sh-seg-toggle">
+                    <button id="seg-grouped" class="active" onclick="setGrouping(true)">Grouped</button>
+                    <button id="seg-raw" onclick="setGrouping(false)">Raw</button>
+                  </div>
+                  <span class="sh-tc-status" id="sh-tc-status"></span>
+                </div>
+              </div>
+              <div class="sh-transcript" id="sh-transcript">
+                <div class="sh-tc-hint">Load a video to fetch its transcript. Click any line to jump the video there.</div>
+              </div>
+              <!-- manual fallback -->
+              <div class="sh-manual" id="sh-manual" style="display:none">
+                <textarea id="sh-manual-text" placeholder="Auto-fetch failed. Open the video on YouTube → ‘Show transcript’ → copy & paste it here."></textarea>
+                <button onclick="saveManualTranscript()">Save pasted transcript</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- draggable divider -->
+          <div class="sh-divider" id="sh-divider"></div>
+
+          <!-- RIGHT: notes + library -->
+          <div class="sh-right">
+            <div class="sh-notes-card">
+              <div class="sh-tc-head">
+                <span class="sh-tc-title">Notes</span>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span class="sh-tc-status" id="sh-notes-status"></span>
+                  <div class="sh-export-wrap">
+                    <button class="sh-export-btn" onclick="toggleExportMenu(event)" title="Export notes">↓ Export ▾</button>
+                    <div class="sh-export-menu" id="sh-export-menu">
+                      <button onclick="copyForNotion()">Copy for Notion</button>
+                      <button onclick="exportNotes('txt')">Notion-ready (.txt)</button>
+                      <button onclick="exportNotes('pdf')">PDF (print)</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <textarea id="sh-notes" placeholder="Take notes here — new phrases, pronunciation, design vocabulary… Autosaved per video."></textarea>
+            </div>
+
+            <div class="sh-library-card">
+              <div class="sh-tc-head">
+                <span class="sh-tc-title">Library</span>
+                <input type="text" id="sh-search" placeholder="Search…" oninput="renderLibrary()" />
+              </div>
+              <div class="sh-library" id="sh-library"></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div><!-- /page-shadowing -->
+  </div>
+
+  <div id="tooltip"></div>
+
+  <!-- selection action popup -->
+  <div id="sel-popup">
+    <div class="sel-actions">
+      <button onclick="addSelectionToNotes()">📝 Add to notes</button>
+      <button onclick="translateSelection()">🌐 Translate</button>
+    </div>
+    <div class="sel-result" id="sel-result" style="display:none">
+      <div class="sel-trans" id="sel-trans"></div>
+      <button class="sel-save" onclick="saveTranslationToNotes()">＋ Save to notes</button>
+    </div>
+  </div>
+
+<script>
+  const STORAGE_KEY = 'goal_tracker_v1';
+  const START_DATE = '2026-05-31';
+  const END_DATE = '2026-11-30';
+
+  // ===== THEME (light / system / dark) =====
+  const THEME_KEY = 'shibarashi_theme';
+  function applyTheme(mode){
+    const root = document.documentElement;
+    if(mode === 'system') root.removeAttribute('data-theme'); // CSS falls back to prefers-color-scheme
+    else root.setAttribute('data-theme', mode);
+    // reflect active state on the toggle (guard: toggle may not be in DOM yet at first call)
+    document.querySelectorAll('#theme-toggle button').forEach(b=>{
+      b.classList.toggle('active', b.dataset.mode === mode);
+    });
+  }
+  function setTheme(mode){
+    localStorage.setItem(THEME_KEY, mode);
+    applyTheme(mode);
+  }
+  // apply saved theme as early as possible (default: system)
+  applyTheme(localStorage.getItem(THEME_KEY) || 'system');
+
+  const HABITS = [
+    { name: 'Podcast shadowing', short: 'Shadowing', cls: 'english', side: 'eng' },
+    { name: 'Portfolio work',    short: 'Portfolio', cls: 'portfolio', side: 'por' },
+    { name: 'Build something',   short: 'Build',     cls: 'craft', side: 'cra' },
+  ];
+
+  let weekOffset = 0;   // 0 = current week
+  let monthOffset = 0;  // 0 = current month
+  let viewMode = 'week';
+  let dragSrc = null;   // { key, h }
+
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function keyOf(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+  function todayStr(){ return keyOf(new Date()); }
+  function parseKey(k){ const [y,m,dd]=k.split('-').map(Number); return new Date(y,m-1,dd); }
+
+  function loadData(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; } }
+  function saveData(d){ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+  function getEntry(data, key){ if(!data[key]) data[key]={habits:[false,false,false]}; return data[key]; }
+
+  function startOfWeek(d){ const x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-x.getDay()); return x; }
+
+  function calcStreak(data){
+    let s=0; const d=new Date();
+    const te=data[todayStr()]; const tc=te&&te.habits.every(Boolean);
+    if(!tc) d.setDate(d.getDate()-1);
+    while(true){ const e=data[keyOf(d)]; if(e&&e.habits.every(Boolean)){ s++; d.setDate(d.getDate()-1);} else break; }
+    return s;
+  }
+  function calcBest(data){
+    const keys=Object.keys(data).filter(k=>data[k].habits.every(Boolean)).sort();
+    let best=0,cur=0,prev=null;
+    for(const k of keys){ const d=parseKey(k);
+      if(prev){ const diff=Math.round((d-prev)/86400000); cur=diff===1?cur+1:1; } else cur=1;
+      best=Math.max(best,cur); prev=d; }
+    return best;
+  }
+
+  const SVG_CHECK_DARK = '<svg viewBox="0 0 12 10" fill="none"><path d="M1 5l3.5 3.5L11 1" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const SVG_CHECK_WHITE = '<svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5l3.5 3.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  // ===== CALENDAR =====
+  function renderCalendar(){
+    const data=loadData();
+    const grid=document.getElementById('cal-grid');
+    grid.innerHTML='';
+    const today=new Date(); today.setHours(0,0,0,0);
+    const base=startOfWeek(today); base.setDate(base.getDate()+weekOffset*7);
+
+    // title + range
+    const weekEnd=new Date(base); weekEnd.setDate(base.getDate()+6);
+    const fmt={month:'short',day:'numeric'};
+    document.getElementById('cal-title').textContent =
+      weekOffset===0 ? 'This Week' : weekOffset===-1 ? 'Last Week' : weekOffset===1 ? 'Next Week' : 'Week of';
+    document.getElementById('cal-range').textContent =
+      `${base.toLocaleDateString('en-US',fmt)} – ${weekEnd.toLocaleDateString('en-US',{...fmt,year:'numeric'})}`;
+
+    const dows=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    for(let i=0;i<7;i++){
+      const d=new Date(base); d.setDate(base.getDate()+i);
+      const k=keyOf(d);
+      const isToday=k===todayStr();
+      const isFuture=d>today;
+      const entry=data[k];
+      const habits=entry?entry.habits:[false,false,false];
+      const doneCount=habits.filter(Boolean).length;
+
+      const col=document.createElement('div');
+      col.className='cal-col'+(isToday?' is-today':'')+(isFuture?' is-future':'');
+
+      let blocksHtml='';
+      HABITS.forEach((h,hi)=>{
+        const done=habits[hi];
+        const drag = (done && !isFuture) ? 'draggable="true"' : '';
+        blocksHtml+=`<div class="cal-block ${h.cls}${done?' done':''}" data-key="${k}" data-h="${hi}" ${isFuture?'data-future="1"':''} ${drag}>
+          <span class="cb-check">${SVG_CHECK_DARK}</span>
+          <span class="cb-name">${h.short}</span>
+        </div>`;
+      });
+
+      col.innerHTML=`
+        <div class="cal-day-head">
+          <div class="cal-dow">${dows[d.getDay()]}</div>
+          <div class="cal-date">${d.getDate()}</div>
+        </div>
+        <div class="cal-blocks">${blocksHtml}</div>
+        <div class="cal-day-progress"><div style="width:${(doneCount/3)*100}%"></div></div>`;
+      col.dataset.key = k;
+      if(isFuture) col.dataset.future = '1';
+      grid.appendChild(col);
+    }
+
+    // wire clicks + drag (skip future)
+    grid.querySelectorAll('.cal-block').forEach(b=>{
+      if(b.dataset.future) return;
+      b.addEventListener('click',()=>toggle(b.dataset.key, parseInt(b.dataset.h)));
+      wireDragSource(b);
+    });
+    grid.querySelectorAll('.cal-col').forEach(wireDropTarget);
+  }
+
+  // ===== DRAG TO RESCHEDULE =====
+  function wireDragSource(el){
+    el.addEventListener('dragstart',e=>{
+      dragSrc={ key: el.dataset.key, h: parseInt(el.dataset.h) };
+      el.classList.add('dragging');
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain', dragSrc.key+':'+dragSrc.h);
+    });
+    el.addEventListener('dragend',()=>{
+      el.classList.remove('dragging');
+      document.querySelectorAll('.drop-target').forEach(c=>c.classList.remove('drop-target'));
+    });
+  }
+  function wireDropTarget(col){
+    if(col.dataset.future) return;
+    col.addEventListener('dragover',e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; col.classList.add('drop-target'); });
+    col.addEventListener('dragleave',()=>col.classList.remove('drop-target'));
+    col.addEventListener('drop',e=>{
+      e.preventDefault();
+      col.classList.remove('drop-target');
+      const destKey=col.dataset.key;
+      if(!dragSrc || !destKey || destKey===dragSrc.key) return;
+      moveCompletion(dragSrc.key, destKey, dragSrc.h);
+      dragSrc=null;
+    });
+  }
+  // Move one habit's completion from srcKey -> destKey
+  function moveCompletion(srcKey, destKey, h){
+    const data=loadData();
+    const src=getEntry(data,srcKey);
+    const dest=getEntry(data,destKey);
+    if(!src.habits[h]) return;       // nothing to move
+    src.habits[h]=false;            // remove from source
+    dest.habits[h]=true;            // add to destination
+    saveData(data);
+    renderAll();
+  }
+
+  // ===== RIGHT PANEL =====
+  function renderToday(){
+    const data=loadData();
+    const k=todayStr();
+    const entry=getEntry(data,k);
+    const list=document.getElementById('today-list');
+    list.innerHTML='';
+    HABITS.forEach((h,i)=>{
+      const done=entry.habits[i];
+      const item=document.createElement('div');
+      item.className=`today-item ${h.side}`+(done?' done':'');
+      item.innerHTML=`
+        <div class="ti-check ${done?'on':''}">${SVG_CHECK_WHITE}</div>
+        <span class="ti-name">${h.name}</span>`;
+      item.onclick=()=>toggle(k,i);
+      list.appendChild(item);
+    });
+    const dc=entry.habits.filter(Boolean).length;
+    document.getElementById('today-progress').textContent=`${dc} / 3`;
+  }
+
+  function renderStats(){
+    const data=loadData();
+    document.getElementById('side-streak').textContent=calcStreak(data);
+    document.getElementById('stat-streak').innerHTML=`${calcStreak(data)}<span class="u"> d</span>`;
+    document.getElementById('stat-best').innerHTML=`${calcBest(data)}<span class="u"> d</span>`;
+    const keys=Object.keys(data);
+    const perfect=keys.filter(k=>data[k].habits.every(Boolean)).length;
+    document.getElementById('stat-perfect').textContent=perfect;
+    const start=parseKey(START_DATE); const today=new Date(); today.setHours(0,0,0,0);
+    const elapsed=Math.max(1,Math.round((today-start)/86400000)+1);
+    let totalDone=0; keys.forEach(k=>totalDone+=data[k].habits.filter(Boolean).length);
+    const rate=Math.min(100,Math.round((totalDone/(elapsed*3))*100));
+    document.getElementById('stat-rate').innerHTML=`${isFinite(rate)?rate:0}<span class="u">%</span>`;
+  }
+
+  function renderHeatmap(){
+    const data=loadData();
+    const hm=document.getElementById('heatmap'); hm.innerHTML='';
+    const today=new Date(); today.setHours(0,0,0,0);
+    const start=parseKey(START_DATE);
+    const gridStart=new Date(start); gridStart.setDate(gridStart.getDate()-gridStart.getDay());
+    const end=new Date(today); end.setDate(end.getDate()+(6-end.getDay()));
+    const tooltip=document.getElementById('tooltip');
+    let total=0;
+    const d=new Date(gridStart);
+    while(d<=end){
+      const k=keyOf(d); const e=data[k];
+      const count=e?e.habits.filter(Boolean).length:0; total+=count;
+      const isFuture=d>today;
+      const cell=document.createElement('div');
+      cell.className='hm-cell'+(count?` l${count+1}`:'')+(isFuture?' future':'')+(k===todayStr()?' today-cell':'');
+      if(!isFuture){
+        const lbl=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+        cell.addEventListener('mouseenter',ev=>{
+          tooltip.innerHTML=`<div class="tt-d">${lbl}</div><div class="tt-c">${count}/3 completed</div>`;
+          tooltip.style.opacity='1';
+          const r=ev.target.getBoundingClientRect();
+          tooltip.style.left=Math.min(r.left,window.innerWidth-150)+'px';
+          tooltip.style.top=(r.top-46)+'px';
+        });
+        cell.addEventListener('mouseleave',()=>tooltip.style.opacity='0');
+      }
+      hm.appendChild(cell);
+      d.setDate(d.getDate()+1);
+    }
+    document.getElementById('heat-total').textContent=`${total} check-ins`;
+  }
+
+  function renderCountdown(){
+    const end=parseKey(END_DATE); const today=new Date(); today.setHours(0,0,0,0);
+    const left=Math.max(0,Math.round((end-today)/86400000));
+    document.getElementById('countdown').innerHTML = left>0
+      ? `<b>${left} days</b> left until ${end.toLocaleDateString('en-US',{month:'long',day:'numeric'})}`
+      : `Target reached — set a new north star! 🎉`;
+  }
+
+  // ===== ACTIONS =====
+  function toggle(key, i){
+    const data=loadData();
+    const e=getEntry(data,key);
+    e.habits[i]=!e.habits[i];
+    saveData(data);
+    renderAll();
+  }
+  // ===== MONTH VIEW =====
+  function renderMonth(){
+    const data=loadData();
+    const today=new Date(); today.setHours(0,0,0,0);
+    const view=new Date(today.getFullYear(), today.getMonth()+monthOffset, 1);
+    const month=view.getMonth(), year=view.getFullYear();
+
+    document.getElementById('cal-title').textContent =
+      monthOffset===0 ? 'This Month' : view.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    document.getElementById('cal-range').textContent =
+      view.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+
+    // day-of-week header
+    const dows=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const dowRow=document.getElementById('month-dow-row');
+    dowRow.innerHTML=dows.map(d=>`<div class="month-dow">${d}</div>`).join('');
+
+    const grid=document.getElementById('month-grid'); grid.innerHTML='';
+    const gridStart=new Date(year,month,1);
+    gridStart.setDate(gridStart.getDate()-gridStart.getDay());
+
+    for(let i=0;i<42;i++){
+      const d=new Date(gridStart); d.setDate(gridStart.getDate()+i);
+      const k=keyOf(d);
+      const isToday=k===todayStr();
+      const isFuture=d>today;
+      const otherMonth=d.getMonth()!==month;
+      const entry=data[k];
+      const habits=entry?entry.habits:[false,false,false];
+
+      const cell=document.createElement('div');
+      cell.className='month-cell'+(isToday?' is-today':'')+(isFuture?' is-future':'')+(otherMonth?' other-month':'');
+      cell.dataset.key=k;
+      if(isFuture) cell.dataset.future='1';
+
+      let dotsHtml='';
+      HABITS.forEach((h,hi)=>{
+        const done=habits[hi];
+        const drag=(done && !isFuture)?'draggable="true"':'';
+        dotsHtml+=`<div class="month-dot ${h.cls}${done?' done':''}" data-key="${k}" data-h="${hi}" ${isFuture?'data-future="1"':''} ${drag} title="${h.name}"></div>`;
+      });
+
+      cell.innerHTML=`<div class="month-date">${d.getDate()}</div><div class="month-dots">${dotsHtml}</div>`;
+      grid.appendChild(cell);
+    }
+
+    grid.querySelectorAll('.month-dot').forEach(b=>{
+      if(b.dataset.future) return;
+      b.addEventListener('click',()=>toggle(b.dataset.key, parseInt(b.dataset.h)));
+      wireDragSource(b);
+    });
+    grid.querySelectorAll('.month-cell').forEach(wireDropTarget);
+  }
+
+  // ===== VIEW + NAV =====
+  function setView(mode){
+    viewMode=mode;
+    document.getElementById('vt-week').classList.toggle('active', mode==='week');
+    document.getElementById('vt-month').classList.toggle('active', mode==='month');
+    document.getElementById('cal-grid').style.display = mode==='week' ? '' : 'none';
+    document.getElementById('month-view').style.display = mode==='month' ? 'block' : 'none';
+    renderCalView();
+  }
+  function changePeriod(delta){
+    if(viewMode==='week') weekOffset+=delta; else monthOffset+=delta;
+    renderCalView();
+  }
+  function goToday(){ weekOffset=0; monthOffset=0; renderCalView(); }
+  function renderCalView(){ if(viewMode==='week') renderCalendar(); else renderMonth(); }
+
+  function renderAll(){
+    renderCalView(); renderToday(); renderStats(); renderHeatmap(); renderCountdown();
+  }
+
+  // ============================================================
+  // PAGE SWITCHING
+  // ============================================================
+  function goPage(page){
+    const isCal = page==='calendar';
+    document.getElementById('page-calendar').style.display = isCal ? 'grid' : 'none';
+    document.getElementById('page-shadowing').style.display = isCal ? 'none' : 'block';
+    document.getElementById('nav-calendar').classList.toggle('active', isCal);
+    document.getElementById('nav-shadowing').classList.toggle('active', !isCal);
+    if(isCal) renderAll(); else { renderLibrary(); refreshShadowingDoneBtn(); }
+  }
+
+  // ============================================================
+  // SHADOWING WORKSPACE
+  // ============================================================
+  const LIB_KEY = 'shadowing_library_v1';
+  let ytPlayer = null;
+  let ytReady = false;
+  let currentVideo = null; // { id, title, url }
+  let notesTimer = null;
+  let activeLineTimer = null;
+  let rawSegments = [];      // last loaded fine-grained segments
+  let grouped = true;        // grouping mode (default on)
+
+  // Merge fine-grained caption fragments into readable chunks.
+  // Break when: a sentence ends (. ? !), a long pause occurs (likely a
+  // new thought / speaker change), or the chunk gets too long.
+  const PAUSE_GAP = 1.5;     // seconds of silence that forces a break
+  const MAX_CHARS = 160;     // don't let a run-on sentence grow unbounded
+  function groupSegments(segs){
+    const out = [];
+    let cur = null;
+    for(let i=0;i<segs.length;i++){
+      const s = segs[i];
+      if(!cur){
+        cur = { start: s.start, dur: s.dur, text: s.text };
+      } else {
+        const prevEnd = cur.start + cur.dur;
+        const gap = s.start - prevEnd;
+        cur.text += ' ' + s.text;
+        cur.dur = (s.start + s.dur) - cur.start;
+        // remember if this fragment opened with a gap (handled below via break check on prev)
+        void gap;
+      }
+      // decide whether to close the current chunk after adding this fragment
+      const next = segs[i+1];
+      const endsSentence = /[.!?]["')\]]?$/.test(cur.text.trim());
+      const gapToNext = next ? (next.start - (s.start + s.dur)) : Infinity;
+      const tooLong = cur.text.length >= MAX_CHARS;
+      if(endsSentence || gapToNext >= PAUSE_GAP || tooLong || !next){
+        cur.text = cur.text.replace(/\s+/g,' ').trim();
+        out.push(cur);
+        cur = null;
+      }
+    }
+    if(cur){ cur.text = cur.text.replace(/\s+/g,' ').trim(); out.push(cur); }
+    return out;
+  }
+
+  function setGrouping(on){
+    grouped = on;
+    document.getElementById('seg-grouped').classList.toggle('active', on);
+    document.getElementById('seg-raw').classList.toggle('active', !on);
+    if(rawSegments.length) paintTranscript();
+  }
+
+  function loadLib(){ try { return JSON.parse(localStorage.getItem(LIB_KEY)) || {}; } catch { return {}; } }
+  function saveLib(l){ localStorage.setItem(LIB_KEY, JSON.stringify(l)); }
+
+  function parseVideoId(url){
+    if(!url) return null;
+    url = url.trim();
+    // bare 11-char id
+    if(/^[\w-]{11}$/.test(url)) return url;
+    let m;
+    if((m = url.match(/[?&]v=([\w-]{11})/))) return m[1];
+    if((m = url.match(/youtu\.be\/([\w-]{11})/))) return m[1];
+    if((m = url.match(/\/shorts\/([\w-]{11})/))) return m[1];
+    if((m = url.match(/\/embed\/([\w-]{11})/))) return m[1];
+    if((m = url.match(/\/live\/([\w-]{11})/))) return m[1];
+    return null;
+  }
+
+  function fmtTime(sec){
+    sec = Math.floor(sec);
+    const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = sec%60;
+    const mm = h ? String(m).padStart(2,'0') : m;
+    return (h ? h+':' : '') + mm + ':' + String(s).padStart(2,'0');
+  }
+
+  // ---- YouTube IFrame API ----
+  function onYouTubeIframeAPIReady(){ ytReady = true; }
+  window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+
+  function mountPlayer(videoId){
+    document.getElementById('sh-video-empty').style.display = 'none';
+    const create = () => {
+      if(ytPlayer){
+        ytPlayer.loadVideoById(videoId);
+      } else {
+        ytPlayer = new YT.Player('sh-player', {
+          videoId,
+          playerVars: { rel: 0, modestbranding: 1 },
+          events: { onStateChange: onPlayerStateChange }
+        });
+      }
+    };
+    if(ytReady && window.YT && YT.Player) create();
+    else {
+      // poll until API loads
+      const iv = setInterval(()=>{ if(window.YT && YT.Player){ clearInterval(iv); ytReady=true; create(); } }, 150);
+    }
+  }
+
+  function onPlayerStateChange(e){
+    if(e.data === YT.PlayerState.PLAYING){
+      if(!activeLineTimer) activeLineTimer = setInterval(highlightActiveLine, 400);
+      highlightActiveLine();
+    } else {
+      clearInterval(activeLineTimer); activeLineTimer = null;
+      // when paused/ended, drop the playing indicator (keep the highlight)
+      if(e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED){
+        document.querySelectorAll('#sh-transcript .sh-line.playing').forEach(el=>el.classList.remove('playing'));
+      }
+    }
+  }
+
+  function highlightActiveLine(){
+    if(!ytPlayer || !ytPlayer.getCurrentTime) return;
+    const t = ytPlayer.getCurrentTime();
+    const playing = ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+    const lines = document.querySelectorAll('#sh-transcript .sh-line');
+    let activeEl = null;
+    lines.forEach(el=>{
+      const start = parseFloat(el.dataset.start);
+      const dur = parseFloat(el.dataset.dur) || 4;
+      el.classList.remove('active');
+      el.classList.remove('playing');
+      if(t >= start && t < start + dur) activeEl = el;
+    });
+    if(activeEl){
+      activeEl.classList.add('active');
+      if(playing) activeEl.classList.add('playing');
+    }
+  }
+
+  function seekTo(sec){
+    if(ytPlayer && ytPlayer.seekTo){ ytPlayer.seekTo(sec, true); ytPlayer.playVideo(); }
+  }
+
+  // ---- loading a video ----
+  function loadVideoFromInput(){
+    const raw = document.getElementById('sh-url').value;
+    const id = parseVideoId(raw);
+    if(!id){ alert('Could not find a YouTube video ID in that URL.'); return; }
+    openVideo(id, raw.trim());
+  }
+
+  async function openVideo(id, url){
+    currentVideo = { id, url: url || `https://youtu.be/${id}` };
+    mountPlayer(id);
+
+    // load notes from library if exists
+    const lib = loadLib();
+    const saved = lib[id];
+    document.getElementById('sh-notes').value = saved?.notes || '';
+    document.getElementById('sh-url').value = currentVideo.url;
+    document.getElementById('sh-manual').style.display = 'none';
+    refreshShadowingDoneBtn();
+
+    // transcript: use cache if present
+    if(saved?.segments?.length){
+      renderTranscript(saved.segments);
+      currentVideo.title = saved.title;
+      document.getElementById('sh-tc-status').textContent = `${saved.segments.length} lines (cached)`;
+      upsertLibrary(); // refresh addedAt order / ensure present
+    } else {
+      await fetchAndRenderTranscript(id);
+    }
+    renderLibrary();
+  }
+
+  async function fetchAndRenderTranscript(id){
+    const status = document.getElementById('sh-tc-status');
+    const tEl = document.getElementById('sh-transcript');
+    status.textContent = 'Fetching…';
+    tEl.innerHTML = '<div class="sh-tc-hint">Fetching transcript…</div>';
+    try {
+      const res = await fetch(`/api/transcript?v=${id}`);
+      const data = await res.json();
+      if(data.error) throw new Error(data.error);
+      currentVideo.title = data.title || currentVideo.title || ('Video ' + id);
+      renderTranscript(data.segments);
+      status.textContent = `${data.segments.length} lines · ${data.lang}`;
+      // cache into library
+      const lib = loadLib();
+      lib[id] = {
+        id, url: currentVideo.url, title: currentVideo.title,
+        addedAt: lib[id]?.addedAt || Date.now(),
+        notes: lib[id]?.notes || document.getElementById('sh-notes').value || '',
+        segments: data.segments
+      };
+      saveLib(lib);
+    } catch(e){
+      status.textContent = 'No auto transcript';
+      tEl.innerHTML = `<div class="sh-tc-hint">⚠️ ${e.message}<br><br>You can still paste the transcript manually below.</div>`;
+      document.getElementById('sh-manual').style.display = 'flex';
+      // still save the video (no segments) so it lands in the library
+      currentVideo.title = currentVideo.title || ('Video ' + id);
+      upsertLibrary();
+    }
+  }
+
+  function renderTranscript(segments){
+    rawSegments = segments || [];
+    paintTranscript();
+  }
+
+  const ICO_PLAY = '<svg class="ico-play" viewBox="0 0 12 12" fill="currentColor"><path d="M3 2l7 4-7 4z"/></svg>';
+  const ICO_PAUSE = '<svg class="ico-pause" viewBox="0 0 12 12" fill="currentColor"><rect x="3" y="2.5" width="2.2" height="7" rx="0.6"/><rect x="6.8" y="2.5" width="2.2" height="7" rx="0.6"/></svg>';
+
+  function paintTranscript(){
+    const tEl = document.getElementById('sh-transcript');
+    tEl.innerHTML = '';
+    const segments = grouped ? groupSegments(rawSegments) : rawSegments;
+    segments.forEach(s=>{
+      const line = document.createElement('div');
+      line.className = 'sh-line';
+      line.dataset.start = s.start;
+      line.dataset.dur = s.dur;
+      line.innerHTML =
+        `<button class="play-btn" title="Play / pause from here">${ICO_PLAY}${ICO_PAUSE}</button>` +
+        `<span class="ts">${fmtTime(s.start)}</span>` +
+        `<span class="tx">${escapeHtml(s.text)}</span>`;
+      // timestamp click → seek (no toggle)
+      line.querySelector('.ts').onclick = ()=> seekTo(s.start);
+      // play button → toggle play/pause from this line
+      line.querySelector('.play-btn').onclick = (e)=>{ e.stopPropagation(); togglePlayLine(line, s.start); };
+      tEl.appendChild(line);
+    });
+  }
+
+  // Play from a line; if that line is already the one playing, pause/resume.
+  function togglePlayLine(lineEl, start){
+    if(!ytPlayer || !ytPlayer.getPlayerState) return;
+    const state = ytPlayer.getPlayerState();
+    const isPlayingThis = lineEl.classList.contains('playing');
+    if(isPlayingThis && state === YT.PlayerState.PLAYING){
+      ytPlayer.pauseVideo();
+    } else if(isPlayingThis && state === YT.PlayerState.PAUSED){
+      ytPlayer.playVideo();
+    } else {
+      seekTo(start); // jumps + plays
+    }
+  }
+
+  function escapeHtml(s){ return s.replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+  function saveManualTranscript(){
+    const txt = document.getElementById('sh-manual-text').value.trim();
+    if(!txt || !currentVideo) return;
+    // split into lines; no timestamps available
+    const segments = txt.split(/\n+/).map(t=>t.trim()).filter(Boolean).map((text,i)=>({ start: i*5, dur: 5, text }));
+    renderTranscript(segments);
+    document.getElementById('sh-tc-status').textContent = `${segments.length} lines (manual)`;
+    document.getElementById('sh-manual').style.display = 'none';
+    const lib = loadLib();
+    lib[currentVideo.id] = { ...(lib[currentVideo.id]||{}), id: currentVideo.id, url: currentVideo.url,
+      title: currentVideo.title, addedAt: lib[currentVideo.id]?.addedAt || Date.now(),
+      notes: document.getElementById('sh-notes').value || '', segments };
+    saveLib(lib);
+    renderLibrary();
+  }
+
+  // ---- notes autosave ----
+  document.getElementById('sh-notes').addEventListener('input', ()=>{
+    if(!currentVideo) return;
+    document.getElementById('sh-notes-status').textContent = 'Saving…';
+    clearTimeout(notesTimer);
+    notesTimer = setTimeout(()=>{
+      const lib = loadLib();
+      lib[currentVideo.id] = { ...(lib[currentVideo.id]||{}), id: currentVideo.id, url: currentVideo.url,
+        title: currentVideo.title || ('Video '+currentVideo.id), addedAt: lib[currentVideo.id]?.addedAt || Date.now(),
+        notes: document.getElementById('sh-notes').value };
+      saveLib(lib);
+      document.getElementById('sh-notes-status').textContent = 'Saved ✓';
+      renderLibrary();
+      setTimeout(()=>{ document.getElementById('sh-notes-status').textContent=''; }, 1500);
+    }, 500);
+  });
+
+  function upsertLibrary(){
+    if(!currentVideo) return;
+    const lib = loadLib();
+    lib[currentVideo.id] = { ...(lib[currentVideo.id]||{}), id: currentVideo.id, url: currentVideo.url,
+      title: currentVideo.title || ('Video '+currentVideo.id), addedAt: lib[currentVideo.id]?.addedAt || Date.now(),
+      notes: lib[currentVideo.id]?.notes || document.getElementById('sh-notes').value || '' };
+    saveLib(lib);
+  }
+
+  // ---- library ----
+  function renderLibrary(){
+    const lib = loadLib();
+    const q = (document.getElementById('sh-search').value || '').toLowerCase();
+    const el = document.getElementById('sh-library');
+    let items = Object.values(lib).sort((a,b)=> (b.addedAt||0)-(a.addedAt||0));
+    if(q) items = items.filter(it => (it.title||'').toLowerCase().includes(q) || (it.notes||'').toLowerCase().includes(q));
+    if(!items.length){
+      el.innerHTML = `<div class="sh-lib-empty">${q ? 'No matches.' : 'No saved videos yet. Paste a URL above to start your library.'}</div>`;
+      return;
+    }
+    el.innerHTML = '';
+    items.forEach(it=>{
+      const card = document.createElement('div');
+      card.className = 'sh-lib-card' + (currentVideo && it.id===currentVideo.id ? ' active' : '');
+      const noteCount = it.notes ? (it.notes.trim().length ? '📝 ' : '') : '';
+      card.innerHTML = `
+        <img class="sh-lib-thumb" src="https://img.youtube.com/vi/${it.id}/mqdefault.jpg" alt="" />
+        <div class="sh-lib-info">
+          <div class="sh-lib-title">${escapeHtml(it.title || ('Video '+it.id))}</div>
+          <div class="sh-lib-meta">${noteCount}${it.segments?.length ? it.segments.length+' lines' : 'no transcript'}</div>
+        </div>
+        <button class="sh-lib-del" title="Remove">×</button>`;
+      card.querySelector('.sh-lib-info').onclick = ()=> openVideo(it.id, it.url);
+      card.querySelector('.sh-lib-thumb').onclick = ()=> openVideo(it.id, it.url);
+      card.querySelector('.sh-lib-del').onclick = (e)=>{ e.stopPropagation(); deleteFromLib(it.id); };
+      el.appendChild(card);
+    });
+  }
+
+  function deleteFromLib(id){
+    const lib = loadLib();
+    delete lib[id];
+    saveLib(lib);
+    if(currentVideo && currentVideo.id===id){ currentVideo=null; }
+    renderLibrary();
+  }
+
+  // ---- tie back to the tracker ----
+  function markShadowingDone(){
+    const data = loadData();
+    const e = getEntry(data, todayStr());
+    e.habits[0] = true; // shadowing is index 0
+    saveData(data);
+    refreshShadowingDoneBtn();
+  }
+  function refreshShadowingDoneBtn(){
+    const data = loadData();
+    const e = data[todayStr()];
+    const done = e && e.habits[0];
+    const btn = document.getElementById('sh-done-btn');
+    if(!btn) return;
+    btn.classList.toggle('is-done', !!done);
+    btn.textContent = done ? "✓ Shadowing done today" : "✓ Mark today's shadowing done";
+  }
+
+  // ============================================================
+  // RESIZE DIVIDERS
+  // While dragging we: (1) disable iframe pointer-events so the YouTube
+  // player doesn't swallow mousemove, (2) capture geometry once on
+  // mousedown, and (3) coalesce updates into a single rAF per frame.
+  // ============================================================
+  const videoFrameWrap = () => document.getElementById('sh-video-wrap');
+
+  function setDragShield(on){
+    // block the iframe (and any selection) from eating drag events
+    const wrap = videoFrameWrap();
+    if(wrap) wrap.style.pointerEvents = on ? 'none' : '';
+  }
+
+  // Horizontal divider: transcript/video  |  notes/library
+  (function initDivider(){
+    const divider = document.getElementById('sh-divider');
+    const body = document.querySelector('.sh-body');
+    const left = document.querySelector('.sh-left');
+    if(!divider || !body || !left) return;
+    let dragging = false, rafId = 0, geom = null, pendingX = 0;
+
+    const apply = () => {
+      rafId = 0;
+      let pct = ((pendingX - geom.left - geom.pad) / geom.track) * 100;
+      pct = Math.max(30, Math.min(80, pct));
+      left.style.flex = `0 0 ${pct}%`;
+    };
+
+    divider.addEventListener('mousedown', e=>{
+      dragging = true; divider.classList.add('dragging');
+      document.body.classList.add('sh-resizing');
+      setDragShield(true);
+      const rect = body.getBoundingClientRect();
+      const pad = 26;
+      geom = { left: rect.left, pad, track: rect.width - pad*2 - 18 };
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', e=>{
+      if(!dragging) return;
+      pendingX = e.clientX;
+      if(!rafId) rafId = requestAnimationFrame(apply);
+    });
+    window.addEventListener('mouseup', ()=>{
+      if(!dragging) return;
+      dragging = false; divider.classList.remove('dragging');
+      document.body.classList.remove('sh-resizing');
+      setDragShield(false);
+      if(rafId){ cancelAnimationFrame(rafId); rafId = 0; }
+    });
+  })();
+
+  // Vertical divider: drag up = taller transcript, shorter video.
+  (function initVDivider(){
+    const vdiv = document.getElementById('sh-vdivider');
+    const video = document.getElementById('sh-video-wrap');
+    const left = document.querySelector('.sh-left');
+    if(!vdiv || !video || !left) return;
+    let dragging = false, rafId = 0, geom = null, pendingY = 0;
+
+    const apply = () => {
+      rafId = 0;
+      let h = pendingY - geom.top;
+      h = Math.max(120, Math.min(h, geom.maxH));
+      video.classList.add('resized');
+      video.style.height = h + 'px';
+    };
+
+    vdiv.addEventListener('mousedown', e=>{
+      dragging = true; vdiv.classList.add('dragging');
+      document.body.classList.add('sh-vresizing');
+      setDragShield(true);
+      const vTop = video.getBoundingClientRect().top;
+      const leftH = left.getBoundingClientRect().height;
+      geom = { top: vTop, maxH: Math.max(120, leftH - 180) };
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', e=>{
+      if(!dragging) return;
+      pendingY = e.clientY;
+      if(!rafId) rafId = requestAnimationFrame(apply);
+    });
+    window.addEventListener('mouseup', ()=>{
+      if(!dragging) return;
+      dragging = false; vdiv.classList.remove('dragging');
+      document.body.classList.remove('sh-vresizing');
+      setDragShield(false);
+      if(rafId){ cancelAnimationFrame(rafId); rafId = 0; }
+    });
+  })();
+
+  // ============================================================
+  // SELECTION POPUP — add to notes / translate
+  // ============================================================
+  const selPopup = document.getElementById('sel-popup');
+  let lastSelection = '';
+  let lastTranslation = '';
+
+  function getTranscriptSelection(){
+    const sel = window.getSelection();
+    if(!sel || sel.isCollapsed) return '';
+    const text = sel.toString().trim();
+    if(!text) return '';
+    // only when the selection is inside the transcript panel
+    const anchor = sel.anchorNode;
+    const tEl = document.getElementById('sh-transcript');
+    if(anchor && tEl.contains(anchor.nodeType === 3 ? anchor.parentNode : anchor)) return text;
+    return '';
+  }
+
+  function showSelPopup(){
+    const text = getTranscriptSelection();
+    if(!text){ hideSelPopup(); return; }
+    lastSelection = text;
+    // reset result area
+    document.getElementById('sel-result').style.display = 'none';
+    document.getElementById('sel-trans').textContent = '';
+    lastTranslation = '';
+
+    const sel = window.getSelection();
+    const rect = sel.getRangeAt(0).getBoundingClientRect();
+    selPopup.classList.add('visible');
+    // position above the selection, centered
+    const pw = selPopup.offsetWidth, ph = selPopup.offsetHeight;
+    let left = rect.left + rect.width/2 - pw/2;
+    left = Math.max(10, Math.min(left, window.innerWidth - pw - 10));
+    let top = rect.top - ph - 8;
+    if(top < 10) top = rect.bottom + 8; // flip below if no room
+    selPopup.style.left = left + 'px';
+    selPopup.style.top = top + 'px';
+  }
+  function hideSelPopup(){ selPopup.classList.remove('visible'); }
+
+  // show popup after a selection settles
+  document.addEventListener('mouseup', e=>{
+    if(selPopup.contains(e.target)) return; // clicks inside popup
+    setTimeout(()=>{ if(getTranscriptSelection()) showSelPopup(); else hideSelPopup(); }, 10);
+  });
+  document.addEventListener('mousedown', e=>{
+    if(!selPopup.contains(e.target)) hideSelPopup();
+  });
+
+  function addSelectionToNotes(){
+    if(!lastSelection) return;
+    appendToNotes(lastSelection);
+    hideSelPopup();
+    window.getSelection().removeAllRanges();
+  }
+
+  async function translateSelection(){
+    if(!lastSelection) return;
+    const resWrap = document.getElementById('sel-result');
+    const transEl = document.getElementById('sel-trans');
+    resWrap.style.display = 'block';
+    transEl.className = 'sel-trans loading';
+    transEl.textContent = 'Translating…';
+    // reposition (popup grew taller)
+    try {
+      const res = await fetch(`/api/translate?q=${encodeURIComponent(lastSelection)}&target=zh-TW`);
+      const data = await res.json();
+      if(data.error) throw new Error(data.error);
+      lastTranslation = data.translated;
+      transEl.className = 'sel-trans';
+      transEl.textContent = data.translated;
+    } catch(e){
+      transEl.className = 'sel-trans';
+      transEl.textContent = '⚠️ ' + e.message;
+    }
+  }
+
+  function saveTranslationToNotes(){
+    if(!lastSelection) return;
+    const line = lastTranslation ? `${lastSelection} — ${lastTranslation}` : lastSelection;
+    appendToNotes(line);
+    hideSelPopup();
+    window.getSelection().removeAllRanges();
+  }
+
+  // Append a line to the notes textarea and trigger autosave.
+  function appendToNotes(text){
+    const ta = document.getElementById('sh-notes');
+    if(!currentVideo){ alert('Open a video first so notes can be saved.'); return; }
+    const existing = ta.value;
+    ta.value = (existing && !existing.endsWith('\n') ? existing + '\n' : existing) + '• ' + text + '\n';
+    // fire input event so the existing autosave handler persists it
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    // brief visual cue
+    const status = document.getElementById('sh-notes-status');
+    if(status){ status.textContent = 'Added ✓'; }
+  }
+
+  function toggleExportMenu(e){
+    e.stopPropagation();
+    document.getElementById('sh-export-menu').classList.toggle('open');
+  }
+  document.addEventListener('click', ()=> document.getElementById('sh-export-menu')?.classList.remove('open'));
+
+  function getExportContext(){
+    if(!currentVideo){ alert('Open a video first.'); return null; }
+    const notes = document.getElementById('sh-notes').value.trim();
+    if(!notes){ alert('No notes to export yet.'); return null; }
+    const title = currentVideo.title || ('Video ' + currentVideo.id);
+    const url = currentVideo.url || `https://youtu.be/${currentVideo.id}`;
+    const safeName = title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').slice(0, 60) || currentVideo.id;
+    return { notes, title, url, safeName };
+  }
+
+  function downloadBlob(content, mime, filename){
+    const blob = new Blob([content], { type: mime });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }
+
+  // Build Notion-friendly Markdown. Notion's paste parses this into real
+  // headings, links, and bullet lists.
+  function buildMarkdown(ctx){
+    const { notes, title, url } = ctx;
+    // Normalize each note line into clean Markdown.
+    const body = notes.split('\n').map(line=>{
+      const t = line.trim();
+      if(!t) return '';
+      // lines added via the popup start with "• " → convert to MD bullets
+      if(/^[•\-*]\s+/.test(t)) return '- ' + t.replace(/^[•\-*]\s+/, '');
+      return t;
+    }).join('\n');
+    return `# ${title}\n\n🔗 [Watch on YouTube](${url})\n\n## Notes\n\n${body}\n`;
+  }
+
+  // Export the current video's notes as a Notion-ready .txt (Markdown) or PDF.
+  function exportNotes(format){
+    document.getElementById('sh-export-menu').classList.remove('open');
+    const ctx = getExportContext();
+    if(!ctx) return;
+
+    if(format === 'txt'){
+      // .txt extension, Markdown content — pastes cleanly into Notion
+      downloadBlob(buildMarkdown(ctx), 'text/plain;charset=utf-8', `${ctx.safeName}.txt`);
+    } else if(format === 'pdf'){
+      exportPdf(ctx.title, ctx.url, ctx.notes);
+    }
+  }
+
+  // Copy Notion-ready Markdown straight to the clipboard.
+  async function copyForNotion(){
+    document.getElementById('sh-export-menu').classList.remove('open');
+    const ctx = getExportContext();
+    if(!ctx) return;
+    const md = buildMarkdown(ctx);
+    try {
+      await navigator.clipboard.writeText(md);
+      const status = document.getElementById('sh-notes-status');
+      if(status){ status.textContent = 'Copied for Notion ✓'; setTimeout(()=>status.textContent='', 1800); }
+    } catch {
+      // fallback: select in a temp textarea
+      const ta = document.createElement('textarea');
+      ta.value = md; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      alert('Copied to clipboard — paste into Notion.');
+    }
+  }
+
+  // PDF via the browser's print dialog ("Save as PDF").
+  function exportPdf(title, url, notes){
+    const esc = s => s.replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    const notesHtml = esc(notes).split(/\n/).map(l=>l.trim()? `<p>${l}</p>` : '<br>').join('');
+    const win = window.open('', '_blank');
+    if(!win){ alert('Please allow pop-ups to export as PDF.'); return; }
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(title)}</title>
+      <style>
+        body{font-family:-apple-system,Segoe UI,sans-serif;max-width:720px;margin:40px auto;padding:0 24px;color:#1a1a1a;line-height:1.6}
+        h1{font-size:22px;margin:0 0 6px}
+        a{color:#6d5bc7;font-size:13px;text-decoration:none}
+        hr{border:none;border-top:1px solid #ddd;margin:18px 0}
+        h2{font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:#666;margin:0 0 10px}
+        p{margin:0 0 8px}
+        @media print{body{margin:0}}
+      </style></head><body>
+      <h1>${esc(title)}</h1>
+      <a href="${esc(url)}">${esc(url)}</a>
+      <hr><h2>Notes</h2>${notesHtml}
+      <script>window.onload=function(){setTimeout(function(){window.print();},250);};<\/script>
+      </body></html>`);
+    win.document.close();
+  }
+
+  // re-sync theme toggle active state now that DOM is fully ready
+  applyTheme(localStorage.getItem(THEME_KEY) || 'system');
+
+  renderAll();
+</script>
+<script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
