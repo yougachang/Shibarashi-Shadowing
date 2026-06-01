@@ -10,9 +10,7 @@ A clean, minimal YouTube shadowing workspace for language learners.
 
 ## 🎬 Demo / 示範
 
-[![Watch the demo](https://github.com/yougachang/Shibarashi-Shadowing/releases/download/demo-assets/demo-thumb.png)](https://github.com/yougachang/Shibarashi-Shadowing/releases/download/demo-assets/shadowing.tool.mp4)
-
-▶ Click the image to watch the demo / 點圖片觀看示範影片
+https://github.com/user-attachments/assets/7eb5d6dc-d4e1-4403-9404-2b1e3edcf5e6
 
 ---
 
