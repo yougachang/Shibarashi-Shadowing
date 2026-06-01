@@ -135,7 +135,7 @@ async function translateText(text, target = 'zh-TW', source = 'en') {
 
 // ---------- http server ----------
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
