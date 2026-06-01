@@ -87,3 +87,27 @@ Then open **http://localhost:4178**.
 - Notes and saved videos live in your browser only — not synced or shared.
 
   筆記與影片只存在你的瀏覽器,不會同步或分享。
+
+---
+
+## 📄 Disclaimer / 免責聲明
+
+This is a personal, non-commercial tool for **language-learning (shadowing) only**.
+
+這是一個**僅供個人語言學習(shadowing)** 的非商業工具。
+
+- It is **not affiliated with, endorsed by, or sponsored by** YouTube or Google.
+
+  本工具與 YouTube、Google **無任何關聯,也未獲其授權或贊助**。
+
+- All videos, captions, and translations belong to their respective owners. Use them only for your own personal study — do **not** download, redistribute, or use content in ways that infringe copyright.
+
+  影片、字幕、翻譯的著作權皆屬原作者所有。請僅用於個人學習,**請勿**下載、再散布或以侵權方式使用內容。
+
+- Please respect the Terms of Service of YouTube and any other service you access through this tool.
+
+  使用時請遵守 YouTube 及任何透過本工具存取之服務的服務條款。
+
+- The software is provided **"as is", without warranty of any kind**. You are solely responsible for how you use it.
+
+  本軟體**依「現狀」提供,不附任何擔保**。使用方式與後果由使用者自行負責。
