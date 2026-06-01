@@ -494,6 +494,14 @@
       border-radius: 8px; color: var(--text); font-family: inherit; font-size: 13px; padding: 10px; outline: none;
     }
     .sh-manual button { align-self: flex-start; }
+    .sh-manual-steps { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .sh-manual-open {
+      background: var(--surface-2) !important; color: var(--text) !important;
+      border: 1px solid var(--border) !important; padding: 7px 12px !important; align-self: auto !important;
+    }
+    .sh-manual-open:hover { background: var(--border) !important; }
+    .sh-manual-hint { font-size: 12px; color: var(--muted-2); line-height: 1.4; }
+    .sh-manual-hint b { color: var(--text); font-weight: 600; }
 
     #sh-notes {
       flex: 1; width: 100%; resize: none; background: transparent; border: none; outline: none;
@@ -724,7 +732,11 @@
               </div>
               <!-- manual fallback -->
               <div class="sh-manual" id="sh-manual" style="display:none">
-                <textarea id="sh-manual-text" placeholder="Auto-fetch failed. Open the video on YouTube → ‘Show transcript’ → copy & paste it here."></textarea>
+                <div class="sh-manual-steps">
+                  <button class="sh-manual-open" onclick="openYouTubeTranscript()">▶ Open on YouTube</button>
+                  <span class="sh-manual-hint">→ click <b>…more</b> → <b>Show transcript</b> → select all &amp; copy → paste below</span>
+                </div>
+                <textarea id="sh-manual-text" placeholder="Paste the transcript here (timestamps are kept automatically if present)…"></textarea>
                 <button onclick="saveManualTranscript()">Save pasted transcript</button>
               </div>
             </div>
@@ -1283,35 +1295,91 @@
     renderLibrary();
   }
 
+  // Public Invidious instances — used as a fallback when our own server is
+  // blocked by YouTube (happens on cloud hosts). They run their own backend
+  // and support CORS, so the browser can call them directly.
+  const INVIDIOUS_HOSTS = [
+    'https://inv.nadeko.net',
+    'https://invidious.nerdvpn.de',
+    'https://yewtu.be',
+  ];
+
+  // VTT / timedtext → [{start,dur,text}]
+  function parseVtt(vtt){
+    const segs = [];
+    const blocks = vtt.replace(/\r/g,'').split('\n\n');
+    for(const b of blocks){
+      const m = b.match(/(\d{1,2}:\d{2}:\d{2}[.,]\d{3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[.,]\d{3})/);
+      if(!m) continue;
+      const toSec = t => { const [h,mn,s] = t.replace(',','.').split(':'); return (+h)*3600 + (+mn)*60 + parseFloat(s); };
+      const start = toSec(m[1]), end = toSec(m[2]);
+      const text = b.split('\n').slice(b.split('\n').findIndex(l=>l.includes('-->'))+1)
+        .join(' ').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
+      if(text) segs.push({ start, dur: end-start, text });
+    }
+    return segs;
+  }
+
+  async function tryInvidious(id){
+    for(const host of INVIDIOUS_HOSTS){
+      try {
+        const lr = await fetch(`${host}/api/v1/captions/${id}`, { signal: AbortSignal.timeout(8000) });
+        if(!lr.ok) continue;
+        const list = await lr.json();
+        const tracks = list.captions || [];
+        if(!tracks.length) continue;
+        const en = tracks.find(c => (c.language_code||'').startsWith('en')) || tracks[0];
+        const cr = await fetch(`${host}${en.url}`, { signal: AbortSignal.timeout(8000) });
+        if(!cr.ok) continue;
+        const vtt = await cr.text();
+        const segs = parseVtt(vtt);
+        if(segs.length) return { segments: segs, lang: en.language_code || 'en', source: 'invidious' };
+      } catch { /* try next host */ }
+    }
+    return null;
+  }
+
+  async function tryOwnServer(id){
+    try {
+      const res = await fetch(`/api/transcript?v=${id}`, { signal: AbortSignal.timeout(12000) });
+      const data = await res.json();
+      if(data.error) return null;
+      return { segments: data.segments, lang: data.lang, title: data.title, source: 'server' };
+    } catch { return null; }
+  }
+
   async function fetchAndRenderTranscript(id){
     const status = document.getElementById('sh-tc-status');
     const tEl = document.getElementById('sh-transcript');
     status.textContent = 'Fetching…';
     tEl.innerHTML = '<div class="sh-tc-hint">Fetching transcript…</div>';
-    try {
-      const res = await fetch(`/api/transcript?v=${id}`);
-      const data = await res.json();
-      if(data.error) throw new Error(data.error);
-      currentVideo.title = data.title || currentVideo.title || ('Video ' + id);
-      renderTranscript(data.segments);
-      status.textContent = `${data.segments.length} lines · ${data.lang}`;
-      // cache into library
+
+    // try our own server first (works on localhost), then public Invidious
+    let result = await tryOwnServer(id);
+    if(!result){ status.textContent = 'Trying public source…'; result = await tryInvidious(id); }
+
+    if(result && result.segments && result.segments.length){
+      if(result.title) currentVideo.title = result.title;
+      currentVideo.title = currentVideo.title || ('Video ' + id);
+      renderTranscript(result.segments);
+      status.textContent = `${result.segments.length} lines · ${result.lang}`;
       const lib = loadLib();
       lib[id] = {
         id, url: currentVideo.url, title: currentVideo.title,
         addedAt: lib[id]?.addedAt || Date.now(),
         notes: lib[id]?.notes || document.getElementById('sh-notes').value || '',
-        segments: data.segments
+        segments: result.segments
       };
       saveLib(lib);
-    } catch(e){
-      status.textContent = 'No auto transcript';
-      tEl.innerHTML = `<div class="sh-tc-hint">⚠️ ${e.message}<br><br>You can still paste the transcript manually below.</div>`;
-      document.getElementById('sh-manual').style.display = 'flex';
-      // still save the video (no segments) so it lands in the library
-      currentVideo.title = currentVideo.title || ('Video ' + id);
-      upsertLibrary();
+      return;
     }
+
+    // all auto methods failed → manual paste
+    status.textContent = 'No auto transcript';
+    tEl.innerHTML = `<div class="sh-tc-hint">⚠️ Couldn't auto-fetch the transcript (YouTube may be blocking the server).<br><br>Use the buttons below to grab it manually — it only takes a few seconds.</div>`;
+    document.getElementById('sh-manual').style.display = 'flex';
+    currentVideo.title = currentVideo.title || ('Video ' + id);
+    upsertLibrary();
   }
 
   function renderTranscript(segments){
@@ -1359,11 +1427,41 @@
 
   function escapeHtml(s){ return s.replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 
+  // Open the video on YouTube (best-effort: opens the watch page; the user
+  // clicks "Show transcript" there). Opens at the saved timestamp if any.
+  function openYouTubeTranscript(){
+    if(!currentVideo) return;
+    window.open(`https://www.youtube.com/watch?v=${currentVideo.id}`, '_blank');
+  }
+
+  // Parse pasted text. Detects YouTube's "Show transcript" format where a
+  // timestamp line (0:35 or 1:02:03) precedes each text line; otherwise
+  // falls back to one line per row with synthetic timing.
+  function parseManualTranscript(txt){
+    const lines = txt.split(/\n+/).map(l=>l.trim()).filter(Boolean);
+    const tsRe = /^(\d{1,2}:)?\d{1,2}:\d{2}$/;
+    const toSec = t => { const p = t.split(':').map(Number); return p.length===3 ? p[0]*3600+p[1]*60+p[2] : p[0]*60+p[1]; };
+    const segs = [];
+    for(let i=0;i<lines.length;i++){
+      if(tsRe.test(lines[i]) && lines[i+1] && !tsRe.test(lines[i+1])){
+        segs.push({ start: toSec(lines[i]), dur: 0, text: lines[i+1] });
+        i++; // consume the text line
+      } else if(!tsRe.test(lines[i])){
+        segs.push({ start: segs.length*5, dur: 5, text: lines[i] });
+      }
+    }
+    // fill durations from next start
+    for(let i=0;i<segs.length;i++){
+      if(!segs[i].dur) segs[i].dur = (segs[i+1] ? segs[i+1].start - segs[i].start : 4) || 4;
+    }
+    return segs;
+  }
+
   function saveManualTranscript(){
     const txt = document.getElementById('sh-manual-text').value.trim();
     if(!txt || !currentVideo) return;
-    // split into lines; no timestamps available
-    const segments = txt.split(/\n+/).map(t=>t.trim()).filter(Boolean).map((text,i)=>({ start: i*5, dur: 5, text }));
+    const segments = parseManualTranscript(txt);
+    if(!segments.length) return;
     renderTranscript(segments);
     document.getElementById('sh-tc-status').textContent = `${segments.length} lines (manual)`;
     document.getElementById('sh-manual').style.display = 'none';
