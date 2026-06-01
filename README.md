@@ -115,3 +115,11 @@ This is a personal, non-commercial tool for **language-learning (shadowing) only
 - The software is provided **"as is", without warranty of any kind**. You are solely responsible for how you use it.
 
   本軟體**依「現狀」提供,不附任何擔保**。使用方式與後果由使用者自行負責。
+
+---
+
+## 📜 License / 授權
+
+Released under the [MIT License](LICENSE).
+
+採用 [MIT License](LICENSE) 授權。
