@@ -74,9 +74,9 @@ Then open **http://localhost:4178**.
 
 然後打開 **http://localhost:4178**。
 
-> **Mac: `start.command` won't open?** Run `chmod +x start.command`, then right-click the file → **Open**. Or just use `node server.js`.
+> **Mac blocks `start.command`?** ("Apple could not verify…") Go to **System Settings → Privacy & Security**, scroll down to "start.command was blocked" → click **Open Anyway**.
 >
-> **Mac 雙擊被擋?** 跑一次 `chmod +x start.command`,再右鍵 →「打開」。或直接用 `node server.js`。
+> **Mac 擋住 `start.command`?**(出現「無法驗證…」)到 **系統設定 → 隱私權與安全性**,往下找到「已封鎖 start.command」→ 按「**仍要打開**」。
 
 ---
 
