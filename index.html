@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shibarashi Goal Tracker</title>
+  <title>Shibarashi — YouTube Shadowing</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -91,9 +91,6 @@
       grid-template-columns: 232px 1fr;
       height: 100vh;
     }
-    /* calendar page keeps the original main + right split */
-    #page-calendar { display: grid; grid-template-columns: 1fr 320px; min-width: 0; overflow: hidden; }
-
     /* ===== SIDEBAR ===== */
     .sidebar {
       background: var(--sidebar);
@@ -111,29 +108,14 @@
     .brand-name { font-weight: 800; font-size: 15px; line-height: 1.15; letter-spacing: -0.01em; }
     .brand-name .sub { display: block; font-weight: 600; font-size: 10px; color: var(--muted); letter-spacing: 0.04em; }
 
-    .nav-group { margin-bottom: 22px; }
-    .nav-group-label {
-      font-size: 10px; font-weight: 700; letter-spacing: 0.07em;
-      text-transform: uppercase; color: var(--muted); padding: 0 8px; margin-bottom: 8px;
-    }
-    .nav-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px; border-radius: 8px; color: var(--muted-2);
-      font-weight: 500; cursor: pointer; transition: background 0.15s, color 0.15s;
-      user-select: none;
-    }
-    .nav-item:hover { background: var(--surface-2); color: var(--text); }
-    .nav-item.active { background: var(--surface-2); color: var(--text); }
-    .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
-    .nav-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin: 0 4px; }
-
-    .sidebar-streak {
+    /* "How to shadow" tip box */
+    .sidebar-tip {
       margin-top: auto; background: var(--surface);
-      border: 1px solid var(--border); border-radius: 12px; padding: 14px;
+      border: 1px solid var(--border); border-radius: 12px; padding: 16px;
     }
-    .sidebar-streak .big { font-size: 28px; font-weight: 800; color: var(--text); line-height: 1; }
-    .sidebar-streak .big .fire { font-size: 22px; }
-    .sidebar-streak .lbl { font-size: 11px; color: var(--muted); margin-top: 5px; }
+    .sidebar-tip .tip-title { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted-2); margin-bottom: 10px; }
+    .sidebar-tip ol { margin: 0; padding-left: 18px; }
+    .sidebar-tip li { font-size: 12.5px; color: var(--muted-2); line-height: 1.55; margin-bottom: 3px; }
 
     /* theme toggle (segmented, Apple-style) */
     .theme-toggle {
@@ -149,194 +131,13 @@
     .theme-toggle button:hover { color: var(--text); }
     .theme-toggle button.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
 
-    /* ===== CENTER / CALENDAR ===== */
-    .main {
-      display: flex; flex-direction: column;
-      overflow: hidden;
-    }
+    /* ===== MAIN HEADER (shared) ===== */
     .main-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 18px 26px; border-bottom: 1px solid var(--border);
     }
     .main-title { font-size: 19px; font-weight: 700; }
     .main-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .week-nav { display: flex; align-items: center; gap: 6px; }
-    .week-nav button {
-      background: var(--surface); border: 1px solid var(--border);
-      color: var(--muted-2); width: 32px; height: 32px; border-radius: 8px;
-      cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
-      transition: background 0.15s, color 0.15s;
-    }
-    .week-nav button:hover { background: var(--surface-2); color: var(--text); }
-    .week-nav .today-btn { width: auto; padding: 0 14px; font-size: 13px; font-weight: 600; }
-
-    /* View toggle */
-    .view-toggle { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 3px; }
-    .view-toggle button {
-      background: none; border: none; color: var(--muted-2);
-      font-family: inherit; font-size: 13px; font-weight: 600;
-      padding: 5px 14px; border-radius: 6px; cursor: pointer; transition: background 0.15s, color 0.15s;
-    }
-    .view-toggle button.active { background: var(--accent); color: var(--on-accent); }
-
-    /* Calendar grid */
-    .calendar { flex: 1; overflow-y: auto; padding: 18px 26px 40px; }
-    .cal-grid {
-      display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px;
-    }
-    .cal-col {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 12px 10px; min-height: 240px;
-      display: flex; flex-direction: column;
-    }
-    .cal-col.is-today { border-color: var(--accent); background: var(--accent-soft); }
-    .cal-col.is-future { opacity: 0.55; }
-    .cal-day-head { text-align: center; margin-bottom: 12px; }
-    .cal-dow { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
-    .cal-date {
-      font-size: 19px; font-weight: 700; margin-top: 3px;
-      width: 34px; height: 34px; line-height: 34px; border-radius: 50%;
-      margin: 3px auto 0; display: inline-block;
-    }
-    .cal-col.is-today .cal-date { background: var(--accent); color: var(--on-accent); }
-
-    .cal-blocks { display: flex; flex-direction: column; gap: 6px; flex: 1; }
-    .cal-block {
-      border-radius: 8px; padding: 8px 9px; font-size: 11px; font-weight: 600;
-      cursor: pointer; transition: transform 0.1s, opacity 0.15s;
-      display: flex; align-items: center; gap: 6px;
-      border: 1px solid transparent; user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .cal-block:active { transform: scale(0.97); }
-    .cal-block .cb-check {
-      width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0;
-      border: 1.5px solid currentColor; display: flex; align-items: center; justify-content: center;
-    }
-    .cal-block .cb-check svg { display: none; width: 9px; height: 9px; }
-    .cal-block.done .cb-check svg { display: block; }
-    .cal-block .cb-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    /* empty (undone) = outline; done = filled. Monochrome: text color
-       is the goal's gray, done state fills with that gray. */
-    .cal-block { color: var(--text); background: var(--surface-2); border-color: var(--border); }
-    .cal-block.english { color: var(--text); }
-    .cal-block.portfolio { color: var(--muted-2); }
-    .cal-block.craft { color: var(--muted-2); }
-    .cal-block.english.done { background: var(--c-english); color: var(--on-accent); border-color: transparent; }
-    .cal-block.portfolio.done { background: var(--c-portfolio); color: var(--on-accent); border-color: transparent; }
-    .cal-block.craft.done { background: var(--c-craft); color: var(--text); border-color: transparent; }
-    .cal-block.done .cb-check { border-color: currentColor; }
-    .cal-day-progress {
-      margin-top: 8px; height: 3px; border-radius: 3px; background: var(--border); overflow: hidden;
-    }
-    .cal-day-progress > div { height: 100%; background: var(--success); border-radius: 3px; transition: width 0.3s; }
-
-    /* Drag states */
-    .cal-block[draggable="true"] { cursor: grab; }
-    .cal-block.dragging { opacity: 0.4; }
-    .cal-col.drop-target { border-color: var(--accent-light); background: var(--accent-soft); }
-
-    /* ===== MONTH VIEW ===== */
-    .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-    .month-dow-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 8px; }
-    .month-dow { text-align: center; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
-    .month-cell {
-      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-      min-height: 92px; padding: 8px; display: flex; flex-direction: column; gap: 6px;
-    }
-    .month-cell.is-today { border-color: var(--accent); background: var(--accent-soft); }
-    .month-cell.is-future { opacity: 0.5; }
-    .month-cell.other-month { opacity: 0.3; }
-    .month-cell.drop-target { border-color: var(--accent-light); background: var(--accent-soft); }
-    .month-date { font-size: 13px; font-weight: 700; color: var(--muted-2); }
-    .month-cell.is-today .month-date { color: var(--accent-light); }
-    .month-dots { display: flex; gap: 5px; margin-top: auto; }
-    .month-dot {
-      width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid; cursor: pointer;
-      transition: transform 0.1s;
-    }
-    .month-dot:active { transform: scale(0.9); }
-    .month-dot.english { border-color: var(--c-english); }
-    .month-dot.english.done { background: var(--c-english); }
-    .month-dot.portfolio { border-color: var(--c-portfolio); }
-    .month-dot.portfolio.done { background: var(--c-portfolio); }
-    .month-dot.craft { border-color: var(--c-craft); }
-    .month-dot.craft.done { background: var(--c-craft); }
-
-    /* ===== RIGHT PANEL ===== */
-    .right {
-      background: var(--sidebar);
-      border-left: 1px solid var(--border);
-      padding: 22px 18px; overflow-y: auto;
-      display: flex; flex-direction: column; gap: 22px;
-    }
-    .panel-title { font-size: 13px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
-    .panel-title .small { font-size: 11px; font-weight: 600; color: var(--muted); }
-
-    /* North star */
-    .northstar {
-      background: var(--surface); border: 1px solid var(--border); border-radius: 13px; padding: 16px;
-    }
-    .northstar .label { font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted-2); margin-bottom: 8px; }
-    .northstar .goal-text { font-size: 13px; line-height: 1.5; color: var(--text); }
-    .northstar .countdown { font-size: 11px; color: var(--muted-2); margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--border); }
-    .northstar .countdown b { color: var(--accent-light); }
-
-    /* Today checklist */
-    .today-list { display: flex; flex-direction: column; gap: 8px; }
-    .today-item {
-      display: flex; align-items: center; gap: 11px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 10px; padding: 12px 13px; cursor: pointer;
-      transition: background 0.15s, border-color 0.15s; user-select: none;
-    }
-    .today-item:hover { background: var(--surface-2); }
-    .today-item.done { background: var(--surface); border-color: var(--border); }
-    .ti-check {
-      width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--border-light);
-      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    .ti-check svg { display: none; }
-    .today-item.done .ti-check svg { display: block; }
-    .today-item .ti-name { font-size: 13px; font-weight: 600; flex: 1; }
-    .today-item.done .ti-name { color: var(--muted); text-decoration: line-through; }
-    .ti-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .today-item.eng .ti-check.on { background: var(--c-english); border-color: var(--c-english); }
-    .today-item.por .ti-check.on { background: var(--c-portfolio); border-color: var(--c-portfolio); }
-    .today-item.cra .ti-check.on { background: var(--c-craft); border-color: var(--c-craft); }
-
-    /* Stats row */
-    .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-    .stat-mini {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 10px; padding: 12px 13px;
-    }
-    .stat-mini .v { font-size: 20px; font-weight: 800; line-height: 1; }
-    .stat-mini .v .u { font-size: 11px; font-weight: 600; color: var(--muted-2); }
-    .stat-mini .l { font-size: 11px; color: var(--muted); margin-top: 5px; }
-    .stat-mini .fire-c { color: var(--c-craft); }
-    .stat-mini .acc-c { color: var(--accent-light); }
-    .stat-mini .grn-c { color: var(--success); }
-
-    /* Mini heatmap */
-    .heat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
-    .heatmap { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7,1fr); gap: 3px; }
-    .hm-cell { width: 11px; height: 11px; border-radius: 3px; background: var(--hm0); }
-    .hm-cell.l1 { background: var(--hm1); } .hm-cell.l2 { background: var(--hm2); }
-    .hm-cell.l3 { background: var(--hm3); } .hm-cell.l4 { background: var(--hm4); }
-    .hm-cell.future { background: transparent; }
-    .hm-cell.today-cell { box-shadow: 0 0 0 1.5px var(--accent-light); }
-    .heat-legend { display: flex; align-items: center; gap: 4px; justify-content: flex-end; margin-top: 11px; font-size: 10px; color: var(--muted); }
-    .legend-cell { width: 10px; height: 10px; border-radius: 3px; }
-
-    #tooltip {
-      position: fixed; background: var(--text); color: var(--bg); border: 1px solid var(--text);
-      border-radius: 8px; padding: 7px 10px; font-size: 11px;
-      pointer-events: none; opacity: 0; transition: opacity 0.12s; z-index: 100; white-space: nowrap;
-    }
-    #tooltip .tt-d { color: var(--bg); opacity: 0.6; margin-bottom: 2px; }
-    #tooltip .tt-c { font-weight: 700; }
 
     /* selection popup */
     #sel-popup {
@@ -533,17 +334,8 @@
       body { overflow: auto; }
       .app { grid-template-columns: 1fr; height: auto; }
       .sidebar { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px; border-right: none; border-bottom: 1px solid var(--border); padding: 14px 16px; }
-      .sidebar-streak { margin-top: 0; margin-left: auto; padding: 8px 12px; }
-      .sidebar-streak .big { font-size: 18px; }
-      .nav-group { margin-bottom: 0; }
-      .nav-group-label { display: none; }
-      .nav-group { display: flex; gap: 6px; }
-      .main { overflow: visible; }
-      .calendar { overflow: visible; }
-      .cal-grid { grid-template-columns: 1fr; }
-      .cal-col { min-height: auto; }
-      .right { border-left: none; border-top: 1px solid var(--border); }
-      #page-calendar { grid-template-columns: 1fr; overflow: visible; }
+      .sidebar-tip { display: none; }          /* hide the tip box on small screens */
+      .theme-toggle { margin-top: 0; margin-left: auto; width: auto; }
       .shadowing-page { overflow: visible; }
       .sh-main { height: auto; overflow: visible; }
       .sh-body { flex-direction: column; overflow: visible; }
@@ -579,27 +371,17 @@
             <path d="M20 27.8 C21.3 29 22.8 28.6 23.2 27.6"/>
           </svg>
         </div>
-        <div class="brand-name">Shibarashi<span class="sub">Goal Tracker</span></div>
+        <div class="brand-name">Shibarashi<span class="sub">Shadowing</span></div>
       </div>
 
-      <div class="nav-group">
-        <div class="nav-group-label">Workspace</div>
-        <div class="nav-item active" id="nav-calendar" onclick="goPage('calendar')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-          Calendar
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <div class="nav-group-label">Goals</div>
-        <div class="nav-item" id="nav-shadowing" onclick="goPage('shadowing')"><span class="nav-dot" style="background:var(--c-english)"></span> English / Shadowing</div>
-        <div class="nav-item"><span class="nav-dot" style="background:var(--c-portfolio)"></span> Portfolio</div>
-        <div class="nav-item"><span class="nav-dot" style="background:var(--c-craft)"></span> Build / Craft</div>
-      </div>
-
-      <div class="sidebar-streak">
-        <div class="big"><span class="fire">🔥</span> <span id="side-streak">0</span></div>
-        <div class="lbl">day streak — keep it alive</div>
+      <div class="sidebar-tip">
+        <div class="tip-title">How to shadow</div>
+        <ol>
+          <li>Paste a YouTube URL</li>
+          <li>Read along with the transcript</li>
+          <li>Click a line to repeat it</li>
+          <li>Take notes &amp; translate</li>
+        </ol>
       </div>
 
       <div class="theme-toggle" id="theme-toggle">
@@ -615,86 +397,14 @@
       </div>
     </aside>
 
-    <!-- ============ CALENDAR PAGE ============ -->
-    <div class="page-content" id="page-calendar">
-    <!-- MAIN / CALENDAR -->
-    <main class="main">
-      <div class="main-header">
-        <div>
-          <div class="main-title" id="cal-title">This Week</div>
-          <div class="main-sub" id="cal-range"></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:14px">
-          <div class="view-toggle">
-            <button id="vt-week" class="active" onclick="setView('week')">Week</button>
-            <button id="vt-month" onclick="setView('month')">Month</button>
-          </div>
-          <div class="week-nav">
-            <button onclick="changePeriod(-1)" title="Previous">‹</button>
-            <button class="today-btn" onclick="goToday()">Today</button>
-            <button onclick="changePeriod(1)" title="Next">›</button>
-          </div>
-        </div>
-      </div>
-      <div class="calendar">
-        <div class="cal-grid" id="cal-grid"></div>
-        <div id="month-view" style="display:none">
-          <div class="month-dow-row" id="month-dow-row"></div>
-          <div class="month-grid" id="month-grid"></div>
-        </div>
-      </div>
-    </main>
-
-    <!-- RIGHT PANEL -->
-    <aside class="right">
-      <div class="northstar">
-        <div class="label">★ 6-Month North Star</div>
-        <div class="goal-text">Improve English communication for design — daily shadowing, a refreshed portfolio, and building real craft.</div>
-        <div class="countdown" id="countdown"></div>
-      </div>
-
-      <div>
-        <div class="panel-title">Today <span class="small" id="today-progress">0 / 3</span></div>
-        <div class="today-list" id="today-list"></div>
-      </div>
-
-      <div>
-        <div class="panel-title">Stats</div>
-        <div class="stats-row">
-          <div class="stat-mini"><div class="v fire-c" id="stat-streak">0<span class="u"> d</span></div><div class="l">Current streak</div></div>
-          <div class="stat-mini"><div class="v acc-c" id="stat-best">0<span class="u"> d</span></div><div class="l">Best streak</div></div>
-          <div class="stat-mini"><div class="v grn-c" id="stat-perfect">0</div><div class="l">Perfect days</div></div>
-          <div class="stat-mini"><div class="v" id="stat-rate">0<span class="u">%</span></div><div class="l">Completion</div></div>
-        </div>
-      </div>
-
-      <div>
-        <div class="panel-title">Activity <span class="small" id="heat-total">0 check-ins</span></div>
-        <div class="heat-card">
-          <div class="heatmap" id="heatmap"></div>
-          <div class="heat-legend">
-            <span>Less</span>
-            <span class="legend-cell" style="background:var(--hm0)"></span>
-            <span class="legend-cell" style="background:var(--hm1)"></span>
-            <span class="legend-cell" style="background:var(--hm2)"></span>
-            <span class="legend-cell" style="background:var(--hm3)"></span>
-            <span class="legend-cell" style="background:var(--hm4)"></span>
-            <span>More</span>
-          </div>
-        </div>
-      </div>
-    </aside>
-    </div><!-- /page-calendar -->
-
-    <!-- ============ SHADOWING PAGE ============ -->
-    <div class="page-content shadowing-page" id="page-shadowing" style="display:none">
+    <!-- ============ SHADOWING (only page) ============ -->
+    <div class="page-content shadowing-page" id="page-shadowing">
       <main class="sh-main">
         <div class="main-header">
           <div>
-            <div class="main-title">English · Shadowing</div>
+            <div class="main-title">Shadowing</div>
             <div class="main-sub">Paste a YouTube URL → watch, read the transcript, take notes.</div>
           </div>
-          <button class="sh-done-btn" id="sh-done-btn" onclick="markShadowingDone()">✓ Mark today's shadowing done</button>
         </div>
 
         <div class="sh-body">
@@ -793,17 +503,12 @@
   </div>
 
 <script>
-  const STORAGE_KEY = 'goal_tracker_v1';
-  const START_DATE = '2026-05-31';
-  const END_DATE = '2026-11-30';
-
   // ===== THEME (light / system / dark) =====
   const THEME_KEY = 'shibarashi_theme';
   function applyTheme(mode){
     const root = document.documentElement;
     if(mode === 'system') root.removeAttribute('data-theme'); // CSS falls back to prefers-color-scheme
     else root.setAttribute('data-theme', mode);
-    // reflect active state on the toggle (guard: toggle may not be in DOM yet at first call)
     document.querySelectorAll('#theme-toggle button').forEach(b=>{
       b.classList.toggle('active', b.dataset.mode === mode);
     });
@@ -812,318 +517,7 @@
     localStorage.setItem(THEME_KEY, mode);
     applyTheme(mode);
   }
-  // apply saved theme as early as possible (default: system)
   applyTheme(localStorage.getItem(THEME_KEY) || 'system');
-
-  const HABITS = [
-    { name: 'Podcast shadowing', short: 'Shadowing', cls: 'english', side: 'eng' },
-    { name: 'Portfolio work',    short: 'Portfolio', cls: 'portfolio', side: 'por' },
-    { name: 'Build something',   short: 'Build',     cls: 'craft', side: 'cra' },
-  ];
-
-  let weekOffset = 0;   // 0 = current week
-  let monthOffset = 0;  // 0 = current month
-  let viewMode = 'week';
-  let dragSrc = null;   // { key, h }
-
-  function pad(n){ return String(n).padStart(2,'0'); }
-  function keyOf(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
-  function todayStr(){ return keyOf(new Date()); }
-  function parseKey(k){ const [y,m,dd]=k.split('-').map(Number); return new Date(y,m-1,dd); }
-
-  function loadData(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; } }
-  function saveData(d){ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
-  function getEntry(data, key){ if(!data[key]) data[key]={habits:[false,false,false]}; return data[key]; }
-
-  function startOfWeek(d){ const x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-x.getDay()); return x; }
-
-  function calcStreak(data){
-    let s=0; const d=new Date();
-    const te=data[todayStr()]; const tc=te&&te.habits.every(Boolean);
-    if(!tc) d.setDate(d.getDate()-1);
-    while(true){ const e=data[keyOf(d)]; if(e&&e.habits.every(Boolean)){ s++; d.setDate(d.getDate()-1);} else break; }
-    return s;
-  }
-  function calcBest(data){
-    const keys=Object.keys(data).filter(k=>data[k].habits.every(Boolean)).sort();
-    let best=0,cur=0,prev=null;
-    for(const k of keys){ const d=parseKey(k);
-      if(prev){ const diff=Math.round((d-prev)/86400000); cur=diff===1?cur+1:1; } else cur=1;
-      best=Math.max(best,cur); prev=d; }
-    return best;
-  }
-
-  const SVG_CHECK_DARK = '<svg viewBox="0 0 12 10" fill="none"><path d="M1 5l3.5 3.5L11 1" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  const SVG_CHECK_WHITE = '<svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5l3.5 3.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
-  // ===== CALENDAR =====
-  function renderCalendar(){
-    const data=loadData();
-    const grid=document.getElementById('cal-grid');
-    grid.innerHTML='';
-    const today=new Date(); today.setHours(0,0,0,0);
-    const base=startOfWeek(today); base.setDate(base.getDate()+weekOffset*7);
-
-    // title + range
-    const weekEnd=new Date(base); weekEnd.setDate(base.getDate()+6);
-    const fmt={month:'short',day:'numeric'};
-    document.getElementById('cal-title').textContent =
-      weekOffset===0 ? 'This Week' : weekOffset===-1 ? 'Last Week' : weekOffset===1 ? 'Next Week' : 'Week of';
-    document.getElementById('cal-range').textContent =
-      `${base.toLocaleDateString('en-US',fmt)} – ${weekEnd.toLocaleDateString('en-US',{...fmt,year:'numeric'})}`;
-
-    const dows=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    for(let i=0;i<7;i++){
-      const d=new Date(base); d.setDate(base.getDate()+i);
-      const k=keyOf(d);
-      const isToday=k===todayStr();
-      const isFuture=d>today;
-      const entry=data[k];
-      const habits=entry?entry.habits:[false,false,false];
-      const doneCount=habits.filter(Boolean).length;
-
-      const col=document.createElement('div');
-      col.className='cal-col'+(isToday?' is-today':'')+(isFuture?' is-future':'');
-
-      let blocksHtml='';
-      HABITS.forEach((h,hi)=>{
-        const done=habits[hi];
-        const drag = (done && !isFuture) ? 'draggable="true"' : '';
-        blocksHtml+=`<div class="cal-block ${h.cls}${done?' done':''}" data-key="${k}" data-h="${hi}" ${isFuture?'data-future="1"':''} ${drag}>
-          <span class="cb-check">${SVG_CHECK_DARK}</span>
-          <span class="cb-name">${h.short}</span>
-        </div>`;
-      });
-
-      col.innerHTML=`
-        <div class="cal-day-head">
-          <div class="cal-dow">${dows[d.getDay()]}</div>
-          <div class="cal-date">${d.getDate()}</div>
-        </div>
-        <div class="cal-blocks">${blocksHtml}</div>
-        <div class="cal-day-progress"><div style="width:${(doneCount/3)*100}%"></div></div>`;
-      col.dataset.key = k;
-      if(isFuture) col.dataset.future = '1';
-      grid.appendChild(col);
-    }
-
-    // wire clicks + drag (skip future)
-    grid.querySelectorAll('.cal-block').forEach(b=>{
-      if(b.dataset.future) return;
-      b.addEventListener('click',()=>toggle(b.dataset.key, parseInt(b.dataset.h)));
-      wireDragSource(b);
-    });
-    grid.querySelectorAll('.cal-col').forEach(wireDropTarget);
-  }
-
-  // ===== DRAG TO RESCHEDULE =====
-  function wireDragSource(el){
-    el.addEventListener('dragstart',e=>{
-      dragSrc={ key: el.dataset.key, h: parseInt(el.dataset.h) };
-      el.classList.add('dragging');
-      e.dataTransfer.effectAllowed='move';
-      e.dataTransfer.setData('text/plain', dragSrc.key+':'+dragSrc.h);
-    });
-    el.addEventListener('dragend',()=>{
-      el.classList.remove('dragging');
-      document.querySelectorAll('.drop-target').forEach(c=>c.classList.remove('drop-target'));
-    });
-  }
-  function wireDropTarget(col){
-    if(col.dataset.future) return;
-    col.addEventListener('dragover',e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; col.classList.add('drop-target'); });
-    col.addEventListener('dragleave',()=>col.classList.remove('drop-target'));
-    col.addEventListener('drop',e=>{
-      e.preventDefault();
-      col.classList.remove('drop-target');
-      const destKey=col.dataset.key;
-      if(!dragSrc || !destKey || destKey===dragSrc.key) return;
-      moveCompletion(dragSrc.key, destKey, dragSrc.h);
-      dragSrc=null;
-    });
-  }
-  // Move one habit's completion from srcKey -> destKey
-  function moveCompletion(srcKey, destKey, h){
-    const data=loadData();
-    const src=getEntry(data,srcKey);
-    const dest=getEntry(data,destKey);
-    if(!src.habits[h]) return;       // nothing to move
-    src.habits[h]=false;            // remove from source
-    dest.habits[h]=true;            // add to destination
-    saveData(data);
-    renderAll();
-  }
-
-  // ===== RIGHT PANEL =====
-  function renderToday(){
-    const data=loadData();
-    const k=todayStr();
-    const entry=getEntry(data,k);
-    const list=document.getElementById('today-list');
-    list.innerHTML='';
-    HABITS.forEach((h,i)=>{
-      const done=entry.habits[i];
-      const item=document.createElement('div');
-      item.className=`today-item ${h.side}`+(done?' done':'');
-      item.innerHTML=`
-        <div class="ti-check ${done?'on':''}">${SVG_CHECK_WHITE}</div>
-        <span class="ti-name">${h.name}</span>`;
-      item.onclick=()=>toggle(k,i);
-      list.appendChild(item);
-    });
-    const dc=entry.habits.filter(Boolean).length;
-    document.getElementById('today-progress').textContent=`${dc} / 3`;
-  }
-
-  function renderStats(){
-    const data=loadData();
-    document.getElementById('side-streak').textContent=calcStreak(data);
-    document.getElementById('stat-streak').innerHTML=`${calcStreak(data)}<span class="u"> d</span>`;
-    document.getElementById('stat-best').innerHTML=`${calcBest(data)}<span class="u"> d</span>`;
-    const keys=Object.keys(data);
-    const perfect=keys.filter(k=>data[k].habits.every(Boolean)).length;
-    document.getElementById('stat-perfect').textContent=perfect;
-    const start=parseKey(START_DATE); const today=new Date(); today.setHours(0,0,0,0);
-    const elapsed=Math.max(1,Math.round((today-start)/86400000)+1);
-    let totalDone=0; keys.forEach(k=>totalDone+=data[k].habits.filter(Boolean).length);
-    const rate=Math.min(100,Math.round((totalDone/(elapsed*3))*100));
-    document.getElementById('stat-rate').innerHTML=`${isFinite(rate)?rate:0}<span class="u">%</span>`;
-  }
-
-  function renderHeatmap(){
-    const data=loadData();
-    const hm=document.getElementById('heatmap'); hm.innerHTML='';
-    const today=new Date(); today.setHours(0,0,0,0);
-    const start=parseKey(START_DATE);
-    const gridStart=new Date(start); gridStart.setDate(gridStart.getDate()-gridStart.getDay());
-    const end=new Date(today); end.setDate(end.getDate()+(6-end.getDay()));
-    const tooltip=document.getElementById('tooltip');
-    let total=0;
-    const d=new Date(gridStart);
-    while(d<=end){
-      const k=keyOf(d); const e=data[k];
-      const count=e?e.habits.filter(Boolean).length:0; total+=count;
-      const isFuture=d>today;
-      const cell=document.createElement('div');
-      cell.className='hm-cell'+(count?` l${count+1}`:'')+(isFuture?' future':'')+(k===todayStr()?' today-cell':'');
-      if(!isFuture){
-        const lbl=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-        cell.addEventListener('mouseenter',ev=>{
-          tooltip.innerHTML=`<div class="tt-d">${lbl}</div><div class="tt-c">${count}/3 completed</div>`;
-          tooltip.style.opacity='1';
-          const r=ev.target.getBoundingClientRect();
-          tooltip.style.left=Math.min(r.left,window.innerWidth-150)+'px';
-          tooltip.style.top=(r.top-46)+'px';
-        });
-        cell.addEventListener('mouseleave',()=>tooltip.style.opacity='0');
-      }
-      hm.appendChild(cell);
-      d.setDate(d.getDate()+1);
-    }
-    document.getElementById('heat-total').textContent=`${total} check-ins`;
-  }
-
-  function renderCountdown(){
-    const end=parseKey(END_DATE); const today=new Date(); today.setHours(0,0,0,0);
-    const left=Math.max(0,Math.round((end-today)/86400000));
-    document.getElementById('countdown').innerHTML = left>0
-      ? `<b>${left} days</b> left until ${end.toLocaleDateString('en-US',{month:'long',day:'numeric'})}`
-      : `Target reached — set a new north star! 🎉`;
-  }
-
-  // ===== ACTIONS =====
-  function toggle(key, i){
-    const data=loadData();
-    const e=getEntry(data,key);
-    e.habits[i]=!e.habits[i];
-    saveData(data);
-    renderAll();
-  }
-  // ===== MONTH VIEW =====
-  function renderMonth(){
-    const data=loadData();
-    const today=new Date(); today.setHours(0,0,0,0);
-    const view=new Date(today.getFullYear(), today.getMonth()+monthOffset, 1);
-    const month=view.getMonth(), year=view.getFullYear();
-
-    document.getElementById('cal-title').textContent =
-      monthOffset===0 ? 'This Month' : view.toLocaleDateString('en-US',{month:'long',year:'numeric'});
-    document.getElementById('cal-range').textContent =
-      view.toLocaleDateString('en-US',{month:'long',year:'numeric'});
-
-    // day-of-week header
-    const dows=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    const dowRow=document.getElementById('month-dow-row');
-    dowRow.innerHTML=dows.map(d=>`<div class="month-dow">${d}</div>`).join('');
-
-    const grid=document.getElementById('month-grid'); grid.innerHTML='';
-    const gridStart=new Date(year,month,1);
-    gridStart.setDate(gridStart.getDate()-gridStart.getDay());
-
-    for(let i=0;i<42;i++){
-      const d=new Date(gridStart); d.setDate(gridStart.getDate()+i);
-      const k=keyOf(d);
-      const isToday=k===todayStr();
-      const isFuture=d>today;
-      const otherMonth=d.getMonth()!==month;
-      const entry=data[k];
-      const habits=entry?entry.habits:[false,false,false];
-
-      const cell=document.createElement('div');
-      cell.className='month-cell'+(isToday?' is-today':'')+(isFuture?' is-future':'')+(otherMonth?' other-month':'');
-      cell.dataset.key=k;
-      if(isFuture) cell.dataset.future='1';
-
-      let dotsHtml='';
-      HABITS.forEach((h,hi)=>{
-        const done=habits[hi];
-        const drag=(done && !isFuture)?'draggable="true"':'';
-        dotsHtml+=`<div class="month-dot ${h.cls}${done?' done':''}" data-key="${k}" data-h="${hi}" ${isFuture?'data-future="1"':''} ${drag} title="${h.name}"></div>`;
-      });
-
-      cell.innerHTML=`<div class="month-date">${d.getDate()}</div><div class="month-dots">${dotsHtml}</div>`;
-      grid.appendChild(cell);
-    }
-
-    grid.querySelectorAll('.month-dot').forEach(b=>{
-      if(b.dataset.future) return;
-      b.addEventListener('click',()=>toggle(b.dataset.key, parseInt(b.dataset.h)));
-      wireDragSource(b);
-    });
-    grid.querySelectorAll('.month-cell').forEach(wireDropTarget);
-  }
-
-  // ===== VIEW + NAV =====
-  function setView(mode){
-    viewMode=mode;
-    document.getElementById('vt-week').classList.toggle('active', mode==='week');
-    document.getElementById('vt-month').classList.toggle('active', mode==='month');
-    document.getElementById('cal-grid').style.display = mode==='week' ? '' : 'none';
-    document.getElementById('month-view').style.display = mode==='month' ? 'block' : 'none';
-    renderCalView();
-  }
-  function changePeriod(delta){
-    if(viewMode==='week') weekOffset+=delta; else monthOffset+=delta;
-    renderCalView();
-  }
-  function goToday(){ weekOffset=0; monthOffset=0; renderCalView(); }
-  function renderCalView(){ if(viewMode==='week') renderCalendar(); else renderMonth(); }
-
-  function renderAll(){
-    renderCalView(); renderToday(); renderStats(); renderHeatmap(); renderCountdown();
-  }
-
-  // ============================================================
-  // PAGE SWITCHING
-  // ============================================================
-  function goPage(page){
-    const isCal = page==='calendar';
-    document.getElementById('page-calendar').style.display = isCal ? 'grid' : 'none';
-    document.getElementById('page-shadowing').style.display = isCal ? 'none' : 'block';
-    document.getElementById('nav-calendar').classList.toggle('active', isCal);
-    document.getElementById('nav-shadowing').classList.toggle('active', !isCal);
-    if(isCal) renderAll(); else { renderLibrary(); refreshShadowingDoneBtn(); }
-  }
 
   // ============================================================
   // SHADOWING WORKSPACE
@@ -1281,7 +675,6 @@
     document.getElementById('sh-notes').value = saved?.notes || '';
     document.getElementById('sh-url').value = currentVideo.url;
     document.getElementById('sh-manual').style.display = 'none';
-    refreshShadowingDoneBtn();
 
     // transcript: use cache if present
     if(saved?.segments?.length){
@@ -1535,24 +928,6 @@
     saveLib(lib);
     if(currentVideo && currentVideo.id===id){ currentVideo=null; }
     renderLibrary();
-  }
-
-  // ---- tie back to the tracker ----
-  function markShadowingDone(){
-    const data = loadData();
-    const e = getEntry(data, todayStr());
-    e.habits[0] = true; // shadowing is index 0
-    saveData(data);
-    refreshShadowingDoneBtn();
-  }
-  function refreshShadowingDoneBtn(){
-    const data = loadData();
-    const e = data[todayStr()];
-    const done = e && e.habits[0];
-    const btn = document.getElementById('sh-done-btn');
-    if(!btn) return;
-    btn.classList.toggle('is-done', !!done);
-    btn.textContent = done ? "✓ Shadowing done today" : "✓ Mark today's shadowing done";
   }
 
   // ============================================================
@@ -1848,7 +1223,8 @@
   // re-sync theme toggle active state now that DOM is fully ready
   applyTheme(localStorage.getItem(THEME_KEY) || 'system');
 
-  renderAll();
+  // init shadowing workspace
+  renderLibrary();
 </script>
 <script src="https://www.youtube.com/iframe_api"></script>
 </body>

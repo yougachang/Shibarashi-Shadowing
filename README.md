@@ -1,9 +1,9 @@
-# 🐕 Shibarashi Goal Tracker
+# 🐕 Shibarashi — YouTube Shadowing
 
-A clean, minimal **goal tracker + YouTube shadowing workspace** for language learners and designers.
-Track your daily habits on a calendar, and turn any YouTube video into a shadowing study tool with transcript + notes.
+A clean, minimal **YouTube shadowing workspace** for language learners.
+Turn any YouTube video into a shadowing study tool: watch, read the transcript line-by-line, repeat, take notes, and translate.
 
-簡潔的**目標追蹤 + YouTube 英文 Shadowing 工作區**。用日曆追蹤每天的習慣,把任何 YouTube 影片變成附逐字稿和筆記的口說練習工具。
+簡潔的 **YouTube 英文 Shadowing 工作區**。把任何 YouTube 影片變成口說練習工具:看影片、逐句讀逐字稿、跟讀、做筆記、翻譯。
 
 ![light + dark](https://img.shields.io/badge/theme-light%20%2F%20dark-1d1d1f) ![no build](https://img.shields.io/badge/setup-no%20npm%20install-1d1d1f)
 
@@ -11,20 +11,15 @@ Track your daily habits on a calendar, and turn any YouTube video into a shadowi
 
 ## ✨ Features / 功能
 
-**📅 Calendar tracker**
-- Week / Month views of your daily habits, with a GitHub-style activity heatmap
-- Streak counter, completion stats, drag-to-reschedule
-- 每日習慣的週/月檢視、連續天數、GitHub 式的活動熱力圖
-
-**🎧 Shadowing workspace**
 - Paste a YouTube URL → watch the embedded video
 - Auto-fetched transcript with timestamps — **click any line to jump there**
-- Play / pause each line, resize panels, take notes (autosaved per video)
+- **Play / pause** each line for repeat practice; **resize** the panels to focus
+- Transcript grouped into readable sentences (toggle **Grouped / Raw**)
+- Take **notes** beside the video — autosaved per video, kept in a searchable **Library**
 - Highlight any sentence → **add to notes** or **translate** (→ Traditional Chinese)
-- Export notes to **TXT / PDF**, or copy as Markdown for Notion
-- 自動逐字稿、點句子跳播放、做筆記、反白翻譯、匯出筆記
-
-**🌗 Light / Dark / System theme** — Apple-style minimal monochrome.
+- Export notes to **TXT / PDF**, or copy as **Markdown** for Notion
+- 🌗 Light / Dark / System theme — Apple-style minimal monochrome
+- 自動逐字稿、點句子跳播放、跟讀、做筆記、反白翻譯、匯出筆記
 
 ---
 
