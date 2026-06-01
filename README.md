@@ -10,33 +10,17 @@ A clean, minimal YouTube shadowing workspace for language learners.
 
 ## ✨ Features / 功能
 
-- Watch any YouTube video with its transcript side-by-side
+- Watch any YouTube video with its transcript side-by-side / 看 YouTube 影片,逐字稿並排顯示
 
-  看 YouTube 影片,逐字稿並排顯示
+- Click a line to jump or repeat it — great for shadowing / 點句子即可跳播或重複,適合跟讀
 
-- Click a line to jump or repeat it — great for shadowing
+- Transcript auto-grouped into readable sentences / 逐字稿自動分成好讀的句子 
 
-  點句子即可跳播或重複,適合跟讀
+- Notes autosaved per video, kept in a searchable Library / 筆記自動依影片儲存,可在 Library 搜尋
 
-- Transcript auto-grouped into readable sentences (Grouped / Raw)
+- Highlight a sentence → add to notes or translate (繁體中文) / 反白句子 → 加入筆記或翻譯成繁體中文
 
-  逐字稿自動分成好讀的句子(Grouped / Raw 切換)
-
-- Notes autosaved per video, kept in a searchable Library
-
-  筆記自動依影片儲存,可在 Library 搜尋
-
-- Highlight a sentence → add to notes or translate (繁體中文)
-
-  反白句子 → 加入筆記或翻譯成繁體中文
-
-- Export notes to TXT / PDF, or copy as Markdown for Notion
-
-  筆記匯出成 TXT / PDF,或複製成 Markdown 貼到 Notion
-
-- Light / Dark / System theme
-
-  深色 / 淺色 / 跟隨系統主題
+- Export notes to TXT / PDF, or copy as Markdown for Notion / 筆記匯出成 TXT / PDF,或複製成 Markdown 貼到 Notion
 
 ---
 
@@ -72,8 +56,6 @@ node server.js
 
 Then open **http://localhost:4178**.
 
-然後打開 **http://localhost:4178**。
-
 > **Mac: `start.command` won't open?** Run `chmod +x start.command`, then right-click the file → **Open**. Or just use `node server.js`.
 >
 > **Mac 雙擊被擋?** 跑一次 `chmod +x start.command`,再右鍵 →「打開」。或直接用 `node server.js`。
@@ -82,9 +64,9 @@ Then open **http://localhost:4178**.
 
 ## ⚠️ Limitations / 限制
 
-- Auto transcript depends on YouTube; if it fails, paste the transcript manually (the app guides you).
+- Auto transcript depends on YouTube; if it fails, paste the transcript manually.
 
-  自動逐字稿看 YouTube 臉色,失敗時可手動貼上(app 會引導你)。
+  自動逐字稿看 YouTube 臉色,失敗時可手動貼上
 
 - Videos without captions can't be auto-transcribed.
 
