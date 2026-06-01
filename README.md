@@ -96,6 +96,10 @@ This is a personal, non-commercial tool for **language-learning (shadowing) only
 
 這是一個**僅供個人語言學習(shadowing)** 的非商業工具。
 
+- It runs **entirely on your own computer**. There is no hosted service — each user runs it locally with their own connection, and the author neither operates a server nor collects any data.
+
+  本工具**完全在你自己的電腦上執行**。沒有任何架設的服務 —— 每位使用者都是在本機、用自己的網路連線執行,作者不營運任何伺服器,也不蒐集任何資料。
+
 - It is **not affiliated with, endorsed by, or sponsored by** YouTube or Google.
 
   本工具與 YouTube、Google **無任何關聯,也未獲其授權或贊助**。
