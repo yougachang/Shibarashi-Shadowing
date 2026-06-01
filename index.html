@@ -315,7 +315,7 @@
       display: flex; gap: 11px; padding: 9px; border-radius: 10px; cursor: pointer;
       border: 1px solid transparent; transition: background 0.15s, border-color 0.15s;
     }
-    .sh-lib-card:hover { background: var(--surface-2); border-color: var(--border); }
+    .sh-lib-card:hover { background: var(--surface-2); }
     .sh-lib-card.active { border-color: var(--accent); background: var(--accent-soft); }
     .sh-lib-thumb { width: 72px; height: 41px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: var(--surface-2); }
     .sh-lib-info { min-width: 0; flex: 1; }
@@ -324,10 +324,12 @@
     .sh-lib-empty { color: var(--muted); font-size: 12.5px; text-align: center; padding: 20px; }
     .sh-lib-del {
       opacity: 0; align-self: center; background: none; border: none; color: var(--muted); cursor: pointer;
-      font-size: 16px; padding: 4px 6px; transition: opacity 0.15s, color 0.15s; flex-shrink: 0;
+      font-size: 15px; line-height: 1; width: 24px; height: 24px; border-radius: 6px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.15s, color 0.15s, background 0.15s;
     }
     .sh-lib-card:hover .sh-lib-del { opacity: 1; }
-    .sh-lib-del:hover { color: #f87171; }
+    .sh-lib-del:hover { color: #e5484d; background: rgba(229,72,77,0.12); }
 
     /* Responsive: collapse to stack on narrow screens */
     @media (max-width: 900px) {
