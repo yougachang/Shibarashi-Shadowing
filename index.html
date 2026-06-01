@@ -290,6 +290,34 @@
     .sh-line.playing .play-btn .ico-play { display: none; }
     .sh-line.playing .play-btn .ico-pause { display: block; }
 
+    /* bookmark button on each line */
+    .sh-line .bm-btn {
+      flex-shrink: 0; align-self: flex-start; margin-top: 1px; width: 22px; height: 22px; border-radius: 6px;
+      background: transparent; border: none; color: var(--muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.12s, color 0.12s;
+    }
+    .sh-line:hover .bm-btn { opacity: 0.6; }
+    .sh-line .bm-btn:hover { opacity: 1; color: var(--text); }
+    .sh-line.bookmarked .bm-btn { opacity: 1; color: var(--accent); }
+    .sh-line .bm-btn svg { width: 13px; height: 13px; }
+    /* a thin accent bar marks a bookmarked line */
+    .sh-line.bookmarked { box-shadow: inset 2px 0 0 var(--accent); }
+    /* the auto-saved "last read" line gets a subtle dashed underline marker */
+    .sh-line.lastpos .ts::after { content: '↩'; margin-left: 4px; color: var(--accent); font-weight: 700; }
+
+    /* "continue where you left off" bar above the transcript */
+    .sh-continue {
+      display: none; align-items: center; gap: 8px; margin: 0 6px 8px;
+      padding: 8px 11px; border-radius: 8px; cursor: pointer;
+      background: var(--accent-soft); border: 1px solid var(--border-light);
+      font-size: 12.5px; color: var(--text); transition: background 0.15s;
+    }
+    .sh-continue:hover { background: var(--border); }
+    .sh-continue.visible { display: flex; }
+    .sh-continue .ct-label { font-weight: 600; }
+    .sh-continue .ct-text { color: var(--muted-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .sh-continue .ct-time { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
+
     .sh-manual { padding: 12px 15px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 9px; }
     .sh-manual textarea {
       width: 100%; min-height: 90px; resize: vertical; background: var(--bg); border: 1px solid var(--border);
@@ -446,6 +474,11 @@
                   </div>
                   <span class="sh-tc-status" id="sh-tc-status"></span>
                 </div>
+              </div>
+              <div class="sh-continue" id="sh-continue" onclick="resumeLastPos()">
+                <span class="ct-label">↩ Continue</span>
+                <span class="ct-time" id="sh-continue-time"></span>
+                <span class="ct-text" id="sh-continue-text"></span>
               </div>
               <div class="sh-transcript" id="sh-transcript">
                 <div class="sh-tc-hint">Load a video to fetch its transcript. Click any line to jump the video there.</div>
@@ -673,6 +706,7 @@
   }
 
   function seekTo(sec){
+    saveLastPos(sec);   // jumping to a line also updates "last read"
     if(ytPlayer && ytPlayer.seekTo){ ytPlayer.seekTo(sec, true); ytPlayer.playVideo(); }
   }
 
@@ -777,6 +811,7 @@
       status.textContent = `${result.segments.length} lines · ${result.lang}`;
       const lib = loadLib();
       lib[id] = {
+        ...(lib[id] || {}),
         id, url: currentVideo.url, title: currentVideo.title,
         addedAt: lib[id]?.addedAt || Date.now(),
         notes: lib[id]?.notes || document.getElementById('sh-notes').value || '',
@@ -801,32 +836,45 @@
 
   const ICO_PLAY = '<svg class="ico-play" viewBox="0 0 12 12" fill="currentColor"><path d="M3 2l7 4-7 4z"/></svg>';
   const ICO_PAUSE = '<svg class="ico-pause" viewBox="0 0 12 12" fill="currentColor"><rect x="3" y="2.5" width="2.2" height="7" rx="0.6"/><rect x="6.8" y="2.5" width="2.2" height="7" rx="0.6"/></svg>';
+  const ICO_BM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12a1 1 0 011 1v17l-7-4-7 4V4a1 1 0 011-1z"/></svg>';
+  const ICO_BM_FILL = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12a1 1 0 011 1v17l-7-4-7 4V4a1 1 0 011-1z"/></svg>';
 
   function paintTranscript(){
     const tEl = document.getElementById('sh-transcript');
     tEl.innerHTML = '';
     const segments = grouped ? groupSegments(rawSegments) : rawSegments;
+    const marks = getBookmarkSet();
+    const lastPos = getLastPos();
     segments.forEach(s=>{
       const line = document.createElement('div');
       line.className = 'sh-line';
       line.dataset.start = s.start;
       line.dataset.dur = s.dur;
+      const isMarked = marks.has(roundKey(s.start));
+      if(isMarked) line.classList.add('bookmarked');
+      if(lastPos != null && Math.abs(lastPos - s.start) < 0.5) line.classList.add('lastpos');
       line.innerHTML =
         `<button class="play-btn" title="Play / pause from here">${ICO_PLAY}${ICO_PAUSE}</button>` +
         `<span class="ts">${fmtTime(s.start)}</span>` +
-        `<span class="tx">${escapeHtml(s.text)}</span>`;
+        `<span class="tx">${escapeHtml(s.text)}</span>` +
+        `<button class="bm-btn" title="Bookmark this line">${isMarked ? ICO_BM_FILL : ICO_BM}</button>`;
       // timestamp click → jump to this line and play (no toggle)
       line.querySelector('.ts').onclick = (e)=>{ e.stopPropagation(); seekTo(s.start); };
       // clicking the sentence text → toggle play / pause from this line
       line.querySelector('.tx').onclick = ()=> togglePlayLine(line, s.start);
       // play button → same toggle
       line.querySelector('.play-btn').onclick = (e)=>{ e.stopPropagation(); togglePlayLine(line, s.start); };
+      // bookmark button → toggle manual bookmark
+      line.querySelector('.bm-btn').onclick = (e)=>{ e.stopPropagation(); toggleBookmark(s.start, s.text, line); };
       tEl.appendChild(line);
     });
+    refreshContinueBar();
   }
 
   // Play from a line; if that line is already the one playing, pause/resume.
   function togglePlayLine(lineEl, start){
+    saveLastPos(start);          // remember where we are
+    markLastPosLine(lineEl);
     if(!ytPlayer || !ytPlayer.getPlayerState) return;
     const state = ytPlayer.getPlayerState();
     const isPlayingThis = lineEl.classList.contains('playing');
@@ -837,6 +885,79 @@
     } else {
       seekTo(start); // jumps + plays
     }
+  }
+
+  // ---- bookmarks & last position (per video, in the library entry) ----
+  function roundKey(sec){ return Math.round(sec); } // tolerant matching key
+
+  function getLastPos(){
+    if(!currentVideo) return null;
+    const e = loadLib()[currentVideo.id];
+    return e && typeof e.lastPos === 'number' ? e.lastPos : null;
+  }
+  function saveLastPos(sec){
+    if(!currentVideo) return;
+    const lib = loadLib();
+    const e = lib[currentVideo.id] || { id: currentVideo.id, url: currentVideo.url, title: currentVideo.title, addedAt: Date.now() };
+    e.lastPos = sec;
+    lib[currentVideo.id] = e;
+    saveLib(lib);
+    refreshContinueBar();
+  }
+  function markLastPosLine(lineEl){
+    document.querySelectorAll('#sh-transcript .sh-line.lastpos').forEach(el=>el.classList.remove('lastpos'));
+    if(lineEl) lineEl.classList.add('lastpos');
+  }
+
+  function getBookmarkSet(){
+    if(!currentVideo) return new Set();
+    const e = loadLib()[currentVideo.id];
+    return new Set((e?.bookmarks || []).map(b => roundKey(b.start)));
+  }
+  function toggleBookmark(start, text, lineEl){
+    if(!currentVideo) return;
+    const lib = loadLib();
+    const e = lib[currentVideo.id] || { id: currentVideo.id, url: currentVideo.url, title: currentVideo.title, addedAt: Date.now() };
+    e.bookmarks = e.bookmarks || [];
+    const key = roundKey(start);
+    const idx = e.bookmarks.findIndex(b => roundKey(b.start) === key);
+    if(idx >= 0){
+      e.bookmarks.splice(idx, 1);
+      lineEl.classList.remove('bookmarked');
+      lineEl.querySelector('.bm-btn').innerHTML = ICO_BM;
+    } else {
+      e.bookmarks.push({ start, text });
+      e.bookmarks.sort((a,b)=>a.start-b.start);
+      lineEl.classList.add('bookmarked');
+      lineEl.querySelector('.bm-btn').innerHTML = ICO_BM_FILL;
+    }
+    lib[currentVideo.id] = e;
+    saveLib(lib);
+  }
+
+  // ---- continue-where-you-left-off bar ----
+  function refreshContinueBar(){
+    const bar = document.getElementById('sh-continue');
+    if(!bar) return;
+    const pos = getLastPos();
+    if(pos == null){ bar.classList.remove('visible'); return; }
+    // find the line text at/just before that position
+    const segs = grouped ? groupSegments(rawSegments) : rawSegments;
+    let label = '';
+    for(const s of segs){ if(s.start <= pos + 0.5) label = s.text; else break; }
+    document.getElementById('sh-continue-time').textContent = fmtTime(pos);
+    document.getElementById('sh-continue-text').textContent = label;
+    bar.classList.add('visible');
+  }
+  function resumeLastPos(){
+    const pos = getLastPos();
+    if(pos == null) return;
+    seekTo(pos);
+    // scroll the matching line into view + flash it
+    const lines = document.querySelectorAll('#sh-transcript .sh-line');
+    let target = null;
+    lines.forEach(el=>{ if(parseFloat(el.dataset.start) <= pos + 0.5) target = el; });
+    if(target){ target.scrollIntoView({ behavior: 'smooth', block: 'center' }); markLastPosLine(target); }
   }
 
   function escapeHtml(s){ return s.replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
